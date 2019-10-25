@@ -72,7 +72,7 @@ public:
 	// Return size of Matrix as pair
 	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const
 	{
-		return { row_size_, col_size_ };
+		return { col_size_, row_size_};
 	}
 
 	// const-ref to underlying vector for testing 
@@ -80,11 +80,6 @@ public:
 	{
 		return matrix_;
 	}
-
-
-	
-
-	
 
 private:
 	// Matrix is represented as a vector
