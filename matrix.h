@@ -1,6 +1,10 @@
 #pragma once
 #include <vector>
 #include <utility>
+#include <cassert>
+#include <algorithm>
+
+#include "Checks.h"
 
 enum class fill_type
 {
@@ -8,38 +12,39 @@ enum class fill_type
 	ones
 };
 
-template<typename T>
+
+template<typename T> 
 class Matrix
 {
 public:
-	// Non-initialising constructors:
-	
+	// Non-initializing constructors:
+
 	// Square Matrix constructor
 	explicit Matrix<T>(const std::size_t n) :
-		matrix_(n, std::vector<T>(n)),
-		row_size_(n),
-		col_size_(n)
+		vector_(n, std::vector<T>(n)),
+		col_size_(n),
+		row_size_(n)
 	{
 		static_assert(std::is_arithmetic<T>());
 	}
 
 	// Non-square Matrix constructor
 	explicit Matrix<T>(const std::size_t n, const std::size_t m) :
-		matrix_(n, std::vector<T>(m)),
-		row_size_(m),
-		col_size_(n)
+		vector_(n, std::vector<T>(m)),
+		col_size_(n),
+		row_size_(m)
 	{
 		static_assert(std::is_arithmetic<T>());
 	}
 
-	
+
 	// Filling constructors:
 
 	// Fills a square Matrix with the fill_type
 	explicit Matrix<T>(const std::size_t n, fill_type fill_type) :
-		matrix_(n, std::vector<T>(n, static_cast<T>(fill_type))),
-		row_size_(n),
-		col_size_(n)
+		vector_(n, std::vector<T>(n, static_cast<T>(fill_type))),
+		col_size_(n),
+		row_size_(n)
 	{
 		static_assert(std::is_arithmetic<T>());
 	}
@@ -47,47 +52,48 @@ public:
 	// Fill a non-square Matrix with the fill_type
 	explicit Matrix<T>(
 		const std::size_t n, const std::size_t m, fill_type fill_type) :
-			matrix_(n, std::vector<T>(m, static_cast<T>(fill_type))),
-			row_size_(m),
-			col_size_(n)
+		vector_(n, std::vector<T>(m, static_cast<T>(fill_type))),
+		col_size_(n),
+		row_size_(m)
 	{
 		static_assert(std::is_arithmetic<T>());
 	}
 
 
-	// std::initializer_list constructors
+	// std::initializer_list constructor
 
 	// Size and elements are derived from the initializer list
-	explicit Matrix<T>(
-		std::initializer_list<std::vector<T>> init_list) :
-		matrix_(init_list),
-		row_size_(init_list.begin()->size()),
-		col_size_(init_list.size())
+	explicit Matrix<T>(std::initializer_list<std::vector<T>> init_list) :
+		vector_(std::move(init_list)),
+		col_size_(init_list.size()),
+		row_size_(init_list.begin()->size())
 	{
 		static_assert(std::is_arithmetic<T>());
-	}
-	
-	// Information about underlying data:
-	
-	// Return size of Matrix as pair
-	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const
-	{
-		return { col_size_, row_size_};
+
+		// Assert that the i-list's sizes are consistent.
+		//assert(Checks::check_matrix_rows(this));
 	}
 
-	// const-ref to underlying vector for testing 
-	const std::vector<std::vector<T>>& return_vec() const
+	// Destructor and copy and move operations are implicit
+
+	// Return size of Matrix as pair
+	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const noexcept
 	{
-		return matrix_;
+		return { col_size_, row_size_ };
+	}
+
+	// Const-ref to underlying data
+	[[nodiscard]] const std::vector<std::vector<T>>& get_data() const
+	{
+		return vector_;
 	}
 
 private:
 	// Matrix is represented as a vector
-	std::vector<std::vector<T>> matrix_;
+	std::vector<std::vector<T>> vector_;
 
-	// Matrix size
-	std::size_t row_size_;
+	// Matrix's size
 	std::size_t col_size_;
+	std::size_t row_size_;
 };
-
 
