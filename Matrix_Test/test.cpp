@@ -2,13 +2,14 @@
 #include <algorithm>
 #include "../matrix.h"
 #include "../Checks.h"
+#include <iostream>
 
 
 namespace MatrixTests
 {
 	// Matrix sizes as Google Test's constructor can't take arguments
 	inline const std::size_t N_SIZE = 3;
-	inline const std::size_t M_SIZE = 4;
+	inline const std::size_t M_SIZE = 5;
 
 	// initializer-list for test case (5x5 matrix I)
 	inline const std::initializer_list<std::vector<int>>
@@ -20,6 +21,8 @@ namespace MatrixTests
 					{0, 0, 0, 0, 1}
 	};
 
+	// Helper templates for unit-tests.
+	
 	template<typename T>
 	bool check_mat_size_help(const Matrix<T>& mat)
 	{
@@ -29,6 +32,43 @@ namespace MatrixTests
 		return Checks::check_matrix_size(size_pair, mat_data);
 	}
 
+	template<typename T>
+	bool test_all_elements(const T predicate, const Matrix<T>& mat)
+	{
+		const auto& mat_data = mat.get_data();
+		
+		return std::all_of(
+			mat_data.cbegin(), mat_data.cend(),
+			[predicate](const std::vector<T>& vector)
+			{
+				return std::all_of(vector.cbegin(), vector.cend(),
+					[predicate](const T element)
+					{
+						return element == predicate;
+					});
+			}
+		);
+	};
+
+	// Tests for identity matrix
+	template<typename T>
+	auto static test_identity (const Matrix<T>& mat)
+	{
+		const auto& mat_data = mat.get_data();
+
+		unsigned i = 0;
+		for (const auto& vector : mat_data)
+		{
+			// vector.size() is row_size
+			if (i > vector.size() - 1) break;
+
+			if (vector[i] != 1) return false;
+			++i;
+		}
+		return true;
+	};
+	
+	
 	// Test class
 	template<typename T>
 	class MatrixTest : public ::testing::Test
@@ -37,28 +77,24 @@ namespace MatrixTests
 		MatrixTest() :
 			square_(N_SIZE),
 			non_square_(N_SIZE, M_SIZE),
-			zf_square_(N_SIZE, fill_type::zeros),
-			of_non_square_(N_SIZE, M_SIZE, fill_type::ones),
+			non_square2_(M_SIZE, N_SIZE),
 			i_list_mat_(I_LIST)
 		{}
 
 	protected:
 		Matrix<T> square_;
 		Matrix<T> non_square_;
+		Matrix<T> non_square2_;
 
-		// Zero and one filled matrices
-		Matrix<T> zf_square_;
-		Matrix<T> of_non_square_;
-
-		// I-LIST initialized Matrix
+		// initList initialized Matrix
 		Matrix<int> i_list_mat_;
 	};
 
-	// No need to test Size for all types
+	// SizeTest is ran with int only.
 	TYPED_TEST_CASE_P(MatrixTest);
 
 	// Rest of the unit-tests are tested with plenty of types
-	using MyTypes = testing::Types<unsigned, int, char, float>;
+	using MyTypes = testing::Types<unsigned, int, char, float, double>;
 	TYPED_TEST_CASE(MatrixTest, MyTypes);
 
 
@@ -73,6 +109,19 @@ namespace MatrixTests
 		ASSERT_TRUE(check_mat_size_help(sq_mat));
 		ASSERT_TRUE(check_mat_size_help(nsq_mat));
 		ASSERT_TRUE(check_mat_size_help(i_list_mat));
+
+		// Death tests with erroneous initLists;
+		ASSERT_DEATH(Matrix<int> bad_init({{1, 2},{1, 2, 3}}),
+			"^Assertion failed");
+		
+		ASSERT_DEATH(
+			Matrix<int> bad_init({
+				{1, 2, 3, 4},
+				{1, 2},
+				{1, 2, 3},
+				{1, 2, 3, 4}
+			}), "^Assertion failed"
+		);
 	}
 
 	// Instantiate SizeTest with int
@@ -81,31 +130,37 @@ namespace MatrixTests
 
 	TYPED_TEST(MatrixTest, FillTest)
 	{
-		// Underlying data type
-		using data_type = std::vector<std::vector<TypeParam>>;
+		// Types
+		using matrix_type = Matrix<TypeParam>;
 
-		// Lambda that tests all of the elements
+		// zf = zero-filled
+		// of = one-filled
+		// id = identity
 
-		auto static test_all_elements = [](
-			const auto predicate, const data_type& vec_of_vectors)
-		{
-			return std::all_of(
-				vec_of_vectors.cbegin(), vec_of_vectors.cend(),
-				[predicate](const std::vector<TypeParam>& vector)
-				{
-					return std::all_of(vector.cbegin(), vector.cend(),
-						[predicate](const TypeParam element)
-						{
-							return element == predicate;
-						});
-				});
-		};
+		// Matrix objects
+		matrix_type& sq_mat_zf = this->square_;
+		matrix_type& nsq_mat_of = this->non_square_;
+		matrix_type& nsq_mat_id = this->non_square2_;
 
-		// Square
-		const auto& zf_vec_vectors = this->zf_square_.get_data();
-		const auto& of_vec_vectors = this->of_non_square_.get_data();
+		// Create a copies. These matrices will be identity filled.
+		matrix_type sq_mat_id = sq_mat_zf;
+		matrix_type nsq_mat_id2 = nsq_mat_of;
+		
+		// Fill the matrices
+		sq_mat_zf.fill(fill_type::zeros);
+		nsq_mat_of.fill(fill_type::ones);
+		sq_mat_id.fill(fill_type::identity);
+		nsq_mat_id.fill(fill_type::identity);
+		nsq_mat_id2.fill(fill_type::identity);
 
-		ASSERT_TRUE(test_all_elements(0, zf_vec_vectors));
-		ASSERT_TRUE(test_all_elements(1, of_vec_vectors));
+		ASSERT_TRUE(test_all_elements(TypeParam(0), sq_mat_zf));
+		ASSERT_TRUE(test_all_elements(TypeParam(1), nsq_mat_of));
+		ASSERT_TRUE(test_identity(sq_mat_id));
+		ASSERT_TRUE(test_identity(nsq_mat_id));
+		ASSERT_TRUE(test_identity(nsq_mat_id2));
 	}
+
+	// TODO: relational tests
+	// TODO: stream operator test
+	// TODO: randi-fill test
 }

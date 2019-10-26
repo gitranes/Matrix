@@ -2,14 +2,22 @@
 #include <vector>
 #include <utility>
 #include <cassert>
-#include <algorithm>
+#include <ostream>
+#include <random>
 
-#include "Checks.h"
+
+namespace RandLimits
+{
+	inline int min = 0;
+	inline int max = 10;
+}
 
 enum class fill_type
 {
 	zeros,
-	ones
+	ones,
+	identity,
+	randi
 };
 
 
@@ -17,64 +25,89 @@ template<typename T>
 class Matrix
 {
 public:
+
+	// Null-matrix
+	Matrix() : col_size_(0), row_size_(0) {};
+
 	// Non-initializing constructors:
 
 	// Square Matrix constructor
-	explicit Matrix<T>(const std::size_t n) :
-		vector_(n, std::vector<T>(n)),
-		col_size_(n),
-		row_size_(n)
-	{
-		static_assert(std::is_arithmetic<T>());
-	}
+	explicit Matrix(const std::size_t n);
 
 	// Non-square Matrix constructor
-	explicit Matrix<T>(const std::size_t n, const std::size_t m) :
-		vector_(n, std::vector<T>(m)),
-		col_size_(n),
-		row_size_(m)
-	{
-		static_assert(std::is_arithmetic<T>());
-	}
+	explicit Matrix(const std::size_t n, const std::size_t m);
 
 
 	// Filling constructors:
 
 	// Fills a square Matrix with the fill_type
-	explicit Matrix<T>(const std::size_t n, fill_type fill_type) :
-		vector_(n, std::vector<T>(n, static_cast<T>(fill_type))),
-		col_size_(n),
-		row_size_(n)
-	{
-		static_assert(std::is_arithmetic<T>());
-	}
+	explicit Matrix(const std::size_t n, const fill_type fill_type);
 
 	// Fill a non-square Matrix with the fill_type
-	explicit Matrix<T>(
-		const std::size_t n, const std::size_t m, fill_type fill_type) :
-		vector_(n, std::vector<T>(m, static_cast<T>(fill_type))),
-		col_size_(n),
-		row_size_(m)
-	{
-		static_assert(std::is_arithmetic<T>());
-	}
+	explicit Matrix(
+		const std::size_t n, const std::size_t m, fill_type fill_type);
 
 
 	// std::initializer_list constructor
 
 	// Size and elements are derived from the initializer list
-	explicit Matrix<T>(std::initializer_list<std::vector<T>> init_list) :
-		vector_(std::move(init_list)),
-		col_size_(init_list.size()),
-		row_size_(init_list.begin()->size())
-	{
-		static_assert(std::is_arithmetic<T>());
-
-		// Assert that the i-list's sizes are consistent.
-		//assert(Checks::check_matrix_rows(this));
-	}
+	explicit Matrix(std::initializer_list<std::vector<T>> init_list);
 
 	// Destructor and copy and move operations are implicit
+
+	
+	// Fill operation
+	Matrix& fill(fill_type fill_type);
+
+
+	// Arithmetic operations. Declaring operations friend allows implicit
+	// conversions both ways, here it has nothing to do with access-specifying.
+
+	friend Matrix& operator+=(Matrix& lhs, const Matrix& rhs)
+	{
+		assert(lhs.size() == rhs.size());
+	}
+
+	// TODO: Arithmetic operations
+
+
+	// TODO: Matrix operations (Linear Algebra)
+	
+	// Relational operations
+
+	friend bool operator==(const Matrix& lhs, const Matrix& rhs)
+	{
+		return lhs.vectors_ == rhs.vectors_;
+	}
+
+	friend bool operator!=(const Matrix& lhs, const Matrix& rhs)
+	{
+		return !(lhs == rhs);
+	}
+
+	friend bool operator<(const Matrix& lhs, const Matrix& rhs)
+	{
+		return lhs.vectors_ < rhs.vectors_;
+	}
+
+	friend bool operator<=(const Matrix& lhs, const Matrix& rhs)
+	{
+		return !(rhs < lhs);
+	}
+
+	friend bool operator>(const Matrix& lhs, const Matrix& rhs)
+	{
+		return rhs < lhs;
+	}
+
+	friend bool operator>=(const Matrix& lhs, const Matrix& rhs)
+	{
+		return !(lhs < rhs);
+	}
+
+	
+	// Stream operator
+	friend std::ostream& operator<<(std::ostream& os, const Matrix& obj);
 
 	// Return size of Matrix as pair
 	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const noexcept
@@ -85,15 +118,28 @@ public:
 	// Const-ref to underlying data
 	[[nodiscard]] const std::vector<std::vector<T>>& get_data() const
 	{
-		return vector_;
+		return vectors_;
 	}
 
 private:
 	// Matrix is represented as a vector
-	std::vector<std::vector<T>> vector_;
+	std::vector<std::vector<T>> vectors_;
 
 	// Matrix's size
 	std::size_t col_size_;
 	std::size_t row_size_;
+
+	
+	// Fillers methods
+	
+	// Form a identity matrix or a nxm matrix with main diagonal
+	// as ones.
+	void fill_identity();
+
+	// Fills matrix with random whole numbers / reals
+	void fill_randi();
 };
 
+
+// Less clutter from the definitions
+#include "matrix.cpp"
