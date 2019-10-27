@@ -8,7 +8,8 @@
 #pragma once
 
 #include <algorithm>
-#include "Checks.h"
+#include "Helpers.h"
+#include "matrix.h"
 
 template <typename T>
 Matrix<T>::Matrix(const std::size_t n) :
@@ -49,17 +50,28 @@ Matrix<T>::Matrix(const std::size_t n, const std::size_t m, fill_type fill_type)
 }
 
 template <typename T>
-Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list) :
-	vectors_(std::move(init_list)),
+Matrix<T>::Matrix(std::initializer_list<std::vector<T>>&& init_list) :
+	vectors_(init_list),
 	col_size_(init_list.size()),
 	row_size_(init_list.begin()->size())
 {
 	static_assert(std::is_arithmetic<T>());
 
-	// Assert that the i-list's sizes are consistent.
+	// Assert that the i-lists' sizes are consistent.
 	assert(Checks::check_matrix_rows(row_size_, vectors_));
 }
 
+template <typename T>
+Matrix<T>::Matrix(std::vector<std::vector<T>>&& vectors) :
+	vectors_(vectors),
+	col_size_(vectors.size()),
+	row_size_(vectors.begin()->size())
+{
+	static_assert(std::is_arithmetic<T>());
+
+	// Assert that the vectors' sizes are consistent.
+	assert(Checks::check_matrix_rows(row_size_, vectors_));
+}
 
 template <typename T>
 Matrix<T>& Matrix<T>::fill(fill_type fill_type)

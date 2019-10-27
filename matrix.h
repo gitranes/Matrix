@@ -1,10 +1,7 @@
 #pragma once
-#include <vector>
-#include <utility>
-#include <cassert>
-#include <ostream>
-#include <random>
+#include "pch.h"
 
+#include "Helpers.h"
 
 namespace RandLimits
 {
@@ -48,10 +45,12 @@ public:
 		const std::size_t n, const std::size_t m, fill_type fill_type);
 
 
-	// std::initializer_list constructor
+	// std::initializer_list and vector constructors. Vector and initList
+	// constructors are used only for rvalues. Implicit conversions are allowed.
+	// Size and elements are derived from the initializer list / vectors. 
 
-	// Size and elements are derived from the initializer list
-	explicit Matrix(std::initializer_list<std::vector<T>> init_list);
+	Matrix(std::initializer_list<std::vector<T>>&& init_list);
+	Matrix(std::vector<std::vector<T>>&& vectors);
 
 	// Destructor and copy and move operations are implicit
 
@@ -62,13 +61,46 @@ public:
 
 	// Arithmetic operations. Declaring operations friend allows implicit
 	// conversions both ways, here it has nothing to do with access-specifying.
+	// See Helpers -> VectorOperations for the precise implementations.
 
+	
 	friend Matrix& operator+=(Matrix& lhs, const Matrix& rhs)
 	{
+		using namespace VectorOperations;
 		assert(lhs.size() == rhs.size());
+
+		lhs.vectors_ += rhs.vectors_;
+
+		return lhs;
 	}
 
-	// TODO: Arithmetic operations
+	friend Matrix& operator-=(Matrix& lhs, const Matrix& rhs)
+	{
+		using namespace VectorOperations;
+		assert(lhs.size() == rhs.size());
+
+		lhs.vectors_ -= rhs.vectors_;
+
+		return lhs;
+	}
+	
+	friend Matrix operator+(const Matrix& lhs, const Matrix& rhs)
+	{
+		using namespace VectorOperations;
+		assert(lhs.size() == rhs.size());
+
+		// New Matrix is constructed from the rvalue-expression
+		return lhs.vectors_ + rhs.vectors_;
+	}
+
+	friend Matrix operator-(const Matrix& lhs, const Matrix& rhs)
+	{
+		using namespace VectorOperations;
+		assert(lhs.size() == rhs.size());
+
+		// See above
+		return lhs.vectors_ - rhs.vectors_;
+	}
 
 
 	// TODO: Matrix operations (Linear Algebra)

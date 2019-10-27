@@ -9,5 +9,10 @@
 
 // add headers that you want to pre-compile here
 #include "framework.h"
+#include <vector>
+#include <utility>
+#include <cassert>
+#include <ostream>
+#include <random>
 
 #endif //PCH_H

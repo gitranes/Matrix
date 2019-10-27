@@ -1,8 +1,9 @@
+// Google test file
+
 #include "pch.h"
-#include <algorithm>
+
 #include "../matrix.h"
-#include "../Checks.h"
-#include <iostream>
+#include "../Helpers.h"
 
 
 namespace MatrixTests
@@ -50,9 +51,10 @@ namespace MatrixTests
 		);
 	};
 
-	// Tests for identity matrix
+	// Tests for main diagonal for the predicate
 	template<typename T>
-	auto static test_identity (const Matrix<T>& mat)
+	auto static test_main_diag (
+		const T predicate, const Matrix<T>& mat)
 	{
 		const auto& mat_data = mat.get_data();
 
@@ -62,7 +64,7 @@ namespace MatrixTests
 			// vector.size() is row_size
 			if (i > vector.size() - 1) break;
 
-			if (vector[i] != 1) return false;
+			if (vector[i] != predicate) return false;
 			++i;
 		}
 		return true;
@@ -90,13 +92,8 @@ namespace MatrixTests
 		Matrix<int> i_list_mat_;
 	};
 
-	// SizeTest is ran with int only.
+	// SizeTest and RelationalTest is ran with int only.
 	TYPED_TEST_CASE_P(MatrixTest);
-
-	// Rest of the unit-tests are tested with plenty of types
-	using MyTypes = testing::Types<unsigned, char, double>;
-	TYPED_TEST_CASE(MatrixTest, MyTypes);
-
 
 	TYPED_TEST_P(MatrixTest, SizeTest)
 	{
@@ -122,38 +119,6 @@ namespace MatrixTests
 				{1, 2, 3, 4}
 			}), "^Assertion failed"
 		);
-	}
-
-	TYPED_TEST(MatrixTest, FillTest)
-	{
-		// Types
-		using matrix_type = Matrix<TypeParam>;
-
-		// zf = zero-filled
-		// of = one-filled
-		// id = identity
-
-		// Matrix objects
-		matrix_type& sq_mat_zf = this->square_;
-		matrix_type& nsq_mat_of = this->non_square_;
-		matrix_type& nsq_mat_id = this->non_square2_;
-
-		// Create a copies. These matrices will be identity filled.
-		matrix_type sq_mat_id = sq_mat_zf;
-		matrix_type nsq_mat_id2 = nsq_mat_of;
-		
-		// Fill the matrices
-		sq_mat_zf.fill(fill_type::zeros);
-		nsq_mat_of.fill(fill_type::ones);
-		sq_mat_id.fill(fill_type::identity);
-		nsq_mat_id.fill(fill_type::identity);
-		nsq_mat_id2.fill(fill_type::identity);
-
-		ASSERT_TRUE(test_all_elements(TypeParam(0), sq_mat_zf));
-		ASSERT_TRUE(test_all_elements(TypeParam(1), nsq_mat_of));
-		ASSERT_TRUE(test_identity(sq_mat_id));
-		ASSERT_TRUE(test_identity(nsq_mat_id));
-		ASSERT_TRUE(test_identity(nsq_mat_id2));
 	}
 
 	TYPED_TEST_P(MatrixTest, RelationalTest)
@@ -190,6 +155,96 @@ namespace MatrixTests
 	// Instantiate SizeTest and RelationalTest with int
 	REGISTER_TYPED_TEST_CASE_P(MatrixTest, SizeTest, RelationalTest);
 	INSTANTIATE_TYPED_TEST_CASE_P(MatrixIntTests, MatrixTest, int);
+
+	// Rest of the unit-tests are tested with plenty of types
+	using MyTypes = testing::Types<unsigned, int, char, double>;
+	TYPED_TEST_CASE(MatrixTest, MyTypes);
+
+	
+	TYPED_TEST(MatrixTest, FillTest)
+	{
+		// Types
+		using matrix_type = Matrix<TypeParam>;
+
+		// zf = zero-filled
+		// of = one-filled
+		// id = identity
+
+		// Matrix objects
+		matrix_type& sq_mat_zf = this->square_.fill(fill_type::zeros);
+		matrix_type& nsq_mat_of = this->non_square_.fill(fill_type::ones);
+		matrix_type& nsq_mat_id = this->non_square2_;
+
+		// Create a copies. These matrices will be identity filled.
+		matrix_type sq_mat_id = sq_mat_zf;
+		matrix_type nsq_mat_id2 = nsq_mat_of;
+		
+		// Fill the identity matrices
+		sq_mat_id.fill(fill_type::identity);
+		nsq_mat_id.fill(fill_type::identity);
+		nsq_mat_id2.fill(fill_type::identity);
+
+		ASSERT_TRUE(test_all_elements(TypeParam(0), sq_mat_zf));
+		ASSERT_TRUE(test_all_elements(TypeParam(1), nsq_mat_of));
+		ASSERT_TRUE(test_main_diag(TypeParam(1), sq_mat_id));
+		ASSERT_TRUE(test_main_diag(TypeParam(1), nsq_mat_id));
+		ASSERT_TRUE(test_main_diag(TypeParam(1), nsq_mat_id2));
+	}
+
+	
+	TYPED_TEST(MatrixTest, ArithmeticTest)
+	{
+		// Types
+		using matrix_type = Matrix<TypeParam>;
+
+		// zf = zero-filled
+		// of = one-filled
+		// id = identity
+
+		// Matrix objects
+		matrix_type& sq_mat_zf = this->square_.fill(fill_type::zeros);
+		matrix_type& nsq_mat_of = this->non_square_.fill(fill_type::ones);
+
+		matrix_type& nsq_mat_id = this->non_square2_.fill(fill_type::identity);
+
+		// Create square identity
+		auto sq_mat_id = sq_mat_zf;
+		sq_mat_id.fill(fill_type::identity);
+
+		// Sum of zero-matrices is zero-matrix
+		matrix_type zero_mat = sq_mat_zf + sq_mat_zf;
+		ASSERT_TRUE(test_all_elements(TypeParam(0), zero_mat));
+		
+		// Sum should be identity matrix
+		matrix_type identity = sq_mat_zf + sq_mat_id;
+		ASSERT_TRUE(test_main_diag(TypeParam(1), identity));
+		
+		// Sum of identities / main diagonal 1's
+		sq_mat_id += sq_mat_id;
+		nsq_mat_id += nsq_mat_id;
+		ASSERT_TRUE(test_main_diag(TypeParam(2), sq_mat_id));
+		ASSERT_TRUE(test_main_diag(TypeParam(2), nsq_mat_id));
+
+		// Should be filled with 2's
+		nsq_mat_of += nsq_mat_of;
+		ASSERT_TRUE(test_all_elements(TypeParam(2), nsq_mat_of));
+		
+		// Matrices with erroneous sizes.
+		ASSERT_DEATH(sq_mat_id += nsq_mat_id, "^Assertion failed");
+		ASSERT_DEATH(sq_mat_id + nsq_mat_id, "^Assertion failed");
+
+		// Test - operation for signed types
+		if constexpr(std::is_signed<TypeParam>())
+		{
+			// matrix - itself = zero
+			sq_mat_id -= sq_mat_id;
+			ASSERT_TRUE(test_all_elements(TypeParam(0), sq_mat_id));
+
+			// zero - zero = zero
+			matrix_type zero_mat2 = sq_mat_zf - sq_mat_zf;
+			ASSERT_TRUE(test_all_elements(TypeParam(0), zero_mat2));
+		}
+	}
 
 
 	// Commented out for now because the test clutters Google-test screen
