@@ -50,12 +50,22 @@ public:
 	// Size and elements are derived from the initializer list / vectors. 
 
 	Matrix(std::initializer_list<std::vector<T>>&& init_list);
+	Matrix(const std::vector<std::vector<T>>& vectors);
 	Matrix(std::vector<std::vector<T>>&& vectors);
 
 	// Destructor and copy and move operations are implicit
 
-	
-	// Fill operation
+	/*
+	 * -- Matrix Fill operation --
+	 * Fill types are
+	 *  > zeros - fills matrix with zeros
+	 *  > ones - fills matrix with ones
+	 *  > identity - fills main diagonal with ones
+	 *  > randi - fills with random integers/reals
+	 *    1 one can specify min and max by changing RandLimits::min/max
+	 *    2 for char the randi is limited to sensible ASCII chars (41,126)
+	 *      the rest is garbage (seperators, null, backspace)
+	 */
 	Matrix& fill(fill_type fill_type);
 
 
@@ -70,7 +80,6 @@ public:
 		assert(lhs.size() == rhs.size());
 
 		lhs.vectors_ += rhs.vectors_;
-
 		return lhs;
 	}
 
@@ -80,7 +89,6 @@ public:
 		assert(lhs.size() == rhs.size());
 
 		lhs.vectors_ -= rhs.vectors_;
-
 		return lhs;
 	}
 	
@@ -102,6 +110,35 @@ public:
 		return lhs.vectors_ - rhs.vectors_;
 	}
 
+	// Matrix multiplication
+	friend Matrix operator*(const Matrix& lhs, const Matrix& rhs)
+	{
+		// Matrix multiplication is defined for:
+		assert(lhs.row_size_ == rhs.col_size_);
+
+		const auto& lhs_data = lhs.get_data();
+		const auto& rhs_data = rhs.get_data();
+
+		// New matrix size : NxM * MxP = NxP.
+		const auto new_col_size = lhs.col_size_;
+		const auto new_row_size = rhs.row_size_;
+
+		// result is initialized to zero.
+		std::vector<std::vector<T>> result
+			(new_col_size, std::vector<T>(new_col_size, 0));
+
+		for (unsigned i = 0; i < new_col_size; ++i)
+		{
+			for (unsigned j = 0; j < new_row_size; ++j)
+			{
+				for (unsigned k = 0; k < lhs.row_size_; ++k)
+				{
+					result[i][j] += lhs_data[i][k] * rhs_data[k][j];
+				}
+			}
+		}
+		return result;
+	}
 
 	// TODO: Matrix operations (Linear Algebra)
 	
@@ -198,6 +235,7 @@ private:
 	// Fills matrix with random whole numbers / reals
 	void fill_randi();
 };
+
 
 
 // Less clutter from the definitions

@@ -33,12 +33,12 @@ namespace Checks
 
 namespace VectorOperations
 {
-	// std::plus and minus require constexpr operations...
-
+	// std::plus and std::minus can't find the defined operations so I
+	// defined my own
 	template<typename T>
 	struct Plus
 	{
-		T operator()(const T& lhs, const T& rhs)
+		constexpr T operator()(const T& lhs, const T& rhs)
 		{
 			return lhs + rhs;
 		}
@@ -47,7 +47,7 @@ namespace VectorOperations
 	template<typename T>
 	struct Minus
 	{
-		T operator()(const T& lhs, const T& rhs)
+		constexpr T operator()(const T& lhs, const T& rhs)
 		{
 			return lhs - rhs;
 		}
@@ -81,7 +81,7 @@ namespace VectorOperations
 		return result;
 	}
 
-	// See +=, T has to be signed
+	// See +=, T has to be a class or signed
 	template<typename T>
 	std::vector<T>& operator-=(std::vector<T>& lhs, const std::vector<T>& rhs)
 	{
@@ -94,7 +94,7 @@ namespace VectorOperations
 		return lhs;
 	}
 
-	// See +, T has to be signed
+	// See +, T has to be class or signed
 	template<typename T>
 	std::vector<T> operator-(
 		const std::vector<T>& lhs, const std::vector<T>& rhs)

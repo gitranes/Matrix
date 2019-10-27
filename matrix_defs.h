@@ -62,6 +62,18 @@ Matrix<T>::Matrix(std::initializer_list<std::vector<T>>&& init_list) :
 }
 
 template <typename T>
+Matrix<T>::Matrix(const std::vector<std::vector<T>>& vectors) :
+	vectors_(vectors),
+	col_size_(vectors.size()),
+	row_size_(vectors.begin()->size())
+{
+	static_assert(std::is_arithmetic<T>());
+
+	// Assert that the vectors' sizes are consistent.
+	assert(Checks::check_matrix_rows(row_size_, vectors_));
+}
+
+template <typename T>
 Matrix<T>::Matrix(std::vector<std::vector<T>>&& vectors) :
 	vectors_(vectors),
 	col_size_(vectors.size()),
@@ -103,7 +115,7 @@ void Matrix<T>::fill_identity()
 	for (auto& vector : vectors_)
 	{
 		// Matrices where col_size > row_size
-		if (i > row_size_ - 1) break;
+		if (i >= row_size_) break;
 
 		vector[i] = 1;
 		++i;
