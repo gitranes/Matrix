@@ -156,6 +156,7 @@
     <ClInclude Include="Checks.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="matrix.h" />
+    <ClInclude Include="matrix_defs.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

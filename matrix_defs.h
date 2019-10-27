@@ -1,16 +1,13 @@
 // 
-// Most of the Matrix-class defitinions are provided here.
+// Most of the Matrix-class definitions are provided here.
 //
-// This .cpp is not project file so that the linker doesn't explode from
-// multiple definitions. By providing the definitions here and including
-// this file at the end of matrix.h, one can get rid of all the definition
-// clutter in the header file.
+// By providing the definitions here and including this file at the end of
+// matrix.h, one can get rid of all the definition clutter in the header file.
 //
 
-#include "pch.h"
+#pragma once
+
 #include <algorithm>
-
-#include "matrix.h"
 #include "Checks.h"
 
 template <typename T>
@@ -23,7 +20,7 @@ Matrix<T>::Matrix(const std::size_t n) :
 }
 
 template <typename T>
-Matrix<T>::Matrix(const std::size_t n, const std::size_t m):
+Matrix<T>::Matrix(const std::size_t n, const std::size_t m) :
 	vectors_(n, std::vector<T>(m)),
 	col_size_(n),
 	row_size_(m)
@@ -32,7 +29,7 @@ Matrix<T>::Matrix(const std::size_t n, const std::size_t m):
 }
 
 template <typename T>
-Matrix<T>::Matrix(const std::size_t n, const fill_type fill_type):
+Matrix<T>::Matrix(const std::size_t n, const fill_type fill_type) :
 	vectors_(n, std::vector<T>(n)),
 	col_size_(n),
 	row_size_(n)
@@ -42,7 +39,7 @@ Matrix<T>::Matrix(const std::size_t n, const fill_type fill_type):
 }
 
 template <typename T>
-Matrix<T>::Matrix(const std::size_t n, const std::size_t m, fill_type fill_type):
+Matrix<T>::Matrix(const std::size_t n, const std::size_t m, fill_type fill_type) :
 	vectors_(n, std::vector<T>(m)),
 	col_size_(n),
 	row_size_(m)
@@ -52,7 +49,7 @@ Matrix<T>::Matrix(const std::size_t n, const std::size_t m, fill_type fill_type)
 }
 
 template <typename T>
-Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list):
+Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list) :
 	vectors_(std::move(init_list)),
 	col_size_(init_list.size()),
 	row_size_(init_list.begin()->size())
@@ -63,20 +60,6 @@ Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list):
 	assert(Checks::check_matrix_rows(row_size_, vectors_));
 }
 
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const Matrix<T>& obj)
-{
-	for (const auto& vec : obj.vectors_)
-	{
-		os << "| ";
-		for (const T& element : vec)
-		{
-			os << element << " ";
-		}
-		os << "|" << std::endl;
-	}
-	return os;
-}
 
 template <typename T>
 Matrix<T>& Matrix<T>::fill(fill_type fill_type)
@@ -87,7 +70,7 @@ Matrix<T>& Matrix<T>::fill(fill_type fill_type)
 		for (auto& vector : vectors_)
 		{
 			std::fill(vector.begin(), vector.end(),
-			          static_cast<T>(fill_type));
+				static_cast<T>(fill_type));
 		}
 	}
 	else if (fill_type == fill_type::identity)
@@ -120,16 +103,22 @@ void Matrix<T>::fill_randi()
 {
 	static std::random_device rd;
 	static std::mt19937 rand_eng(rd());
-	const int min = RandLimits::min;
-	const int max = RandLimits::max;
+	int min = RandLimits::min;
+	int max = RandLimits::max;
 
+	if constexpr (std::is_same<T, char>())
+	{
+		// Rest of the ASCII range is unprintable garbage
+		min = 41;
+		max = 126;
+	}
 	// Wish I had concepts
 
 	// Real random numbers
-	if constexpr (std::is_same<T, float>() || std::is_same<T, double>())
+	if constexpr (std::is_floating_point<T>())
 	{
-		const float f_min = static_cast<float>(min);
-		const float f_max = static_cast<float>(max);
+		const auto f_min = static_cast<float>(min);
+		const auto f_max = static_cast<float>(max);
 
 		using u_dist = std::uniform_real_distribution<float>;
 		static u_dist uid(f_min, f_max);

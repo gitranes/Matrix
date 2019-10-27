@@ -105,9 +105,36 @@ public:
 		return !(lhs < rhs);
 	}
 
-	
 	// Stream operator
-	friend std::ostream& operator<<(std::ostream& os, const Matrix& obj);
+	friend std::ostream& operator<<(std::ostream& os, const Matrix& obj)
+	{
+		bool float_format = false;
+		// Change state of the stream
+		if constexpr (std::is_floating_point<T>())
+		{
+			os << std::fixed << std::setprecision(2) << std::setfill(' ');
+			float_format = true;
+		} else {
+			os << std::setfill(' ');
+		}
+		
+		for (const auto& vec : obj.vectors_)
+		{
+			os << std::endl << "|";
+			for (const T& element : vec)
+			{
+				if (float_format)
+				{
+					os << " " << std::setw(5) << element << " " << std::setw(2);
+				}
+				else {
+					os << std::setw(4) << element << std::setw(4);
+				}
+			}
+			os << " |" << std::endl;
+		}
+		return os;
+	}
 
 	// Return size of Matrix as pair
 	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const noexcept
@@ -142,4 +169,4 @@ private:
 
 
 // Less clutter from the definitions
-#include "matrix.cpp"
+#include "matrix_defs.h"

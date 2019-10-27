@@ -20,7 +20,7 @@ namespace Checks
 	{
 		return std::all_of(
 			matrix_data.cbegin(), matrix_data.cend(),
-			[row_predicate](const std::vector<int>& row_vec)
+			[row_predicate](const std::vector<T>& row_vec)
 			{
 				return row_vec.size() == row_predicate;
 			}

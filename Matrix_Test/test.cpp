@@ -94,7 +94,7 @@ namespace MatrixTests
 	TYPED_TEST_CASE_P(MatrixTest);
 
 	// Rest of the unit-tests are tested with plenty of types
-	using MyTypes = testing::Types<unsigned, int, char, float, double>;
+	using MyTypes = testing::Types<unsigned, char, double>;
 	TYPED_TEST_CASE(MatrixTest, MyTypes);
 
 
@@ -123,10 +123,6 @@ namespace MatrixTests
 			}), "^Assertion failed"
 		);
 	}
-
-	// Instantiate SizeTest with int
-	REGISTER_TYPED_TEST_CASE_P(MatrixTest, SizeTest);
-	INSTANTIATE_TYPED_TEST_CASE_P(MatrixIntTests, MatrixTest, int);
 
 	TYPED_TEST(MatrixTest, FillTest)
 	{
@@ -160,7 +156,56 @@ namespace MatrixTests
 		ASSERT_TRUE(test_identity(nsq_mat_id2));
 	}
 
-	// TODO: relational tests
-	// TODO: stream operator test
-	// TODO: randi-fill test
+	TYPED_TEST_P(MatrixTest, RelationalTest)
+	{
+		using matrixType = Matrix<TypeParam>;
+
+		matrixType& sq_mat_of = this->square_.fill(fill_type::ones);
+		matrixType& nsq_mat = this->non_square_.fill(fill_type::ones);
+
+		// Copies and 2x3 matrix
+		auto sq_mat_zf = sq_mat_of;
+		auto nsq_mat_zf = nsq_mat;
+		auto mat2_by3 = matrixType(2, 3, fill_type::zeros);
+
+		sq_mat_zf.fill(fill_type::zeros);
+		nsq_mat_zf.fill(fill_type::zeros);
+
+		// Test == and !=
+		ASSERT_EQ(sq_mat_zf, sq_mat_zf);
+		ASSERT_EQ(nsq_mat, nsq_mat);
+		ASSERT_NE(sq_mat_zf, nsq_mat_zf);
+
+		// Test >, >=, < an <=
+		ASSERT_GT(sq_mat_of, sq_mat_zf);
+		ASSERT_LT(sq_mat_zf, sq_mat_of);
+		ASSERT_GE(nsq_mat_zf, sq_mat_zf);
+		ASSERT_LE(sq_mat_zf, nsq_mat_zf);
+
+		// Test >
+		ASSERT_GT(sq_mat_of, mat2_by3);
+		ASSERT_GT(nsq_mat_zf, mat2_by3);
+	}
+
+	// Instantiate SizeTest and RelationalTest with int
+	REGISTER_TYPED_TEST_CASE_P(MatrixTest, SizeTest, RelationalTest);
+	INSTANTIATE_TYPED_TEST_CASE_P(MatrixIntTests, MatrixTest, int);
+
+
+	// Commented out for now because the test clutters Google-test screen
+	/*
+	// This test can only be graded visually
+	TYPED_TEST(MatrixTest, OutputRandTest)
+	{
+		using matrix_type = Matrix<TypeParam>;
+		
+		matrix_type& sq_mat = this->square_;
+		matrix_type& nsq_mat = this->non_square_;
+
+		sq_mat.fill(fill_type::randi);
+		nsq_mat.fill(fill_type::randi);
+
+		std::cout << sq_mat << '\n' << nsq_mat << '\n' << std::endl;
+	}
+	*/
 }
