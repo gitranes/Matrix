@@ -8,7 +8,6 @@
 #pragma once
 
 #include <algorithm>
-#include "Helpers.h"
 #include "matrix.h"
 
 template <typename T>
@@ -58,19 +57,7 @@ Matrix<T>::Matrix(std::initializer_list<std::vector<T>>&& init_list) :
 	static_assert(std::is_arithmetic<T>());
 
 	// Assert that the i-lists' sizes are consistent.
-	assert(Checks::check_matrix_rows(row_size_, vectors_));
-}
-
-template <typename T>
-Matrix<T>::Matrix(const std::vector<std::vector<T>>& vectors) :
-	vectors_(vectors),
-	col_size_(vectors.size()),
-	row_size_(vectors.begin()->size())
-{
-	static_assert(std::is_arithmetic<T>());
-
-	// Assert that the vectors' sizes are consistent.
-	assert(Checks::check_matrix_rows(row_size_, vectors_));
+	assert(check_matrix_rows());
 }
 
 template <typename T>
@@ -82,7 +69,7 @@ Matrix<T>::Matrix(std::vector<std::vector<T>>&& vectors) :
 	static_assert(std::is_arithmetic<T>());
 
 	// Assert that the vectors' sizes are consistent.
-	assert(Checks::check_matrix_rows(row_size_, vectors_));
+	assert(check_matrix_rows());
 }
 
 template <typename T>
@@ -106,6 +93,49 @@ Matrix<T>& Matrix<T>::fill(fill_type fill_type)
 		fill_randi();
 	}
 	return *this;
+}
+
+template <typename T>
+bool Matrix<T>::check_matrix_rows() const 
+{
+	return std::all_of(
+		vectors_.cbegin(), vectors_.cend(),
+		[row_size = row_size_](const std::vector<T>& row_vec)
+		{
+			return row_vec.size() == row_size;
+		}
+	);
+}
+
+template <typename T>
+bool Matrix<T>::all_of(const T predicate) const
+{
+	return std::all_of(
+		vectors_.cbegin(), vectors_.cend(),
+		[predicate](const std::vector<T>& vector)
+		{
+			return std::all_of(vector.cbegin(), vector.cend(),
+			[predicate](const T element)
+	        {
+				return element == predicate;
+	        });
+		}
+	);
+}
+
+template <typename T>
+bool Matrix<T>::if_main_diag(const T predicate) const
+{
+	unsigned i = 0;
+	for (const auto& vector : vectors_)
+	{
+		// vector.size() is row_size
+		if (i >= vector.size()) break;
+
+		if (vector[i] != predicate) return false;
+		++i;
+	}
+	return true;
 }
 
 template <typename T>

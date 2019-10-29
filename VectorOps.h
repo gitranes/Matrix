@@ -1,34 +1,11 @@
 #pragma once
 
-// Helper functions: Check-functions and std::vector operations
+// std::vector operations
 
 #pragma once
 #include <vector>
 #include <algorithm>
 #include <cassert>
-
-namespace Checks
-{	
-	// Used only by SizeTest
-	bool check_matrix_size(
-		const std::pair<std::size_t, std::size_t>& size_pair,
-		const std::vector<std::vector<int>>& matrix_data
-	);
-
-	template<typename T>
-	bool check_matrix_rows(
-		const std::size_t row_predicate,
-		const std::vector<std::vector<T>>& matrix_data)
-	{
-		return std::all_of(
-			matrix_data.cbegin(), matrix_data.cend(),
-			[row_predicate](const std::vector<T>& row_vec)
-			{
-				return row_vec.size() == row_predicate;
-			}
-		);
-	}
-};
 
 
 namespace VectorOperations
@@ -111,4 +88,3 @@ namespace VectorOperations
 		return result;
 	};
 }
-

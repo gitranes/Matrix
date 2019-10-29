@@ -1,7 +1,8 @@
 #pragma once
-#include "pch.h"
 
-#include "Helpers.h"
+#include "pch.h"
+#include "VectorOps.h"
+
 
 namespace RandLimits
 {
@@ -50,7 +51,6 @@ public:
 	// Size and elements are derived from the initializer list / vectors. 
 
 	Matrix(std::initializer_list<std::vector<T>>&& init_list);
-	Matrix(const std::vector<std::vector<T>>& vectors);
 	Matrix(std::vector<std::vector<T>>&& vectors);
 
 	// Destructor and copy and move operations are implicit
@@ -110,14 +110,28 @@ public:
 		return lhs.vectors_ - rhs.vectors_;
 	}
 
+
+	// Scalar multiplication
+	Matrix& operator*(const T scalar)
+	{
+		for (auto& vector : vectors_)
+		{
+			for (T& element : vector)
+			{
+				element *= scalar;
+			}
+		}
+		return *this;
+	}
+	
 	// Matrix multiplication
 	friend Matrix operator*(const Matrix& lhs, const Matrix& rhs)
 	{
 		// Matrix multiplication is defined for:
 		assert(lhs.row_size_ == rhs.col_size_);
 
-		const auto& lhs_data = lhs.get_data();
-		const auto& rhs_data = rhs.get_data();
+		const auto& lhs_data = lhs.vectors_;
+		const auto& rhs_data = rhs.vectors_;
 
 		// New matrix size : NxM * MxP = NxP.
 		const auto new_col_size = lhs.col_size_;
@@ -127,6 +141,7 @@ public:
 		std::vector<std::vector<T>> result
 			(new_col_size, std::vector<T>(new_col_size, 0));
 
+		// Matrix multiplication
 		for (unsigned i = 0; i < new_col_size; ++i)
 		{
 			for (unsigned j = 0; j < new_row_size; ++j)
@@ -205,16 +220,19 @@ public:
 		return os;
 	}
 
+	// Used mostly in unit-testing
+
+	// Checks if all of the elements are certain value
+	[[nodiscard]] bool all_of(const T predicate) const;
+
+	// Checks the main diagonal for certain value
+	[[nodiscard]] bool if_main_diag(const T predicate) const;
+
+	
 	// Return size of Matrix as pair
 	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const noexcept
 	{
 		return { col_size_, row_size_ };
-	}
-
-	// Const-ref to underlying data
-	[[nodiscard]] const std::vector<std::vector<T>>& get_data() const
-	{
-		return vectors_;
 	}
 
 private:
@@ -225,6 +243,8 @@ private:
 	std::size_t col_size_;
 	std::size_t row_size_;
 
+	// Size-checking (initList / vector constructors)
+	[[nodiscard]] bool check_matrix_rows() const;
 	
 	// Fillers methods
 	
@@ -235,8 +255,6 @@ private:
 	// Fills matrix with random whole numbers / reals
 	void fill_randi();
 };
-
-
 
 // Less clutter from the definitions
 #include "matrix_defs.h"
