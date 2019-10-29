@@ -1,2 +1,2 @@
-# cpp_matrix
-Templated C++ matrix library
+# Matrix
+Templated C++ matrix library with Google unit-tests
