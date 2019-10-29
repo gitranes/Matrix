@@ -49,7 +49,7 @@ Matrix<T>::Matrix(const std::size_t n, const std::size_t m, fill_type fill_type)
 }
 
 template <typename T>
-Matrix<T>::Matrix(std::initializer_list<std::vector<T>>&& init_list) :
+Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list) :
 	vectors_(init_list),
 	col_size_(init_list.size()),
 	row_size_(init_list.begin()->size())
@@ -62,9 +62,9 @@ Matrix<T>::Matrix(std::initializer_list<std::vector<T>>&& init_list) :
 
 template <typename T>
 Matrix<T>::Matrix(std::vector<std::vector<T>>&& vectors) :
-	vectors_(vectors),
-	col_size_(vectors.size()),
-	row_size_(vectors.begin()->size())
+	vectors_(std::move(vectors)),
+	col_size_(vectors_.size()),
+	row_size_(vectors_.begin()->size())
 {
 	static_assert(std::is_arithmetic<T>());
 

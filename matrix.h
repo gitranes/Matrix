@@ -46,15 +46,16 @@ public:
 		const std::size_t n, const std::size_t m, fill_type fill_type);
 
 
-	// std::initializer_list and vector constructors. Vector and initList
-	// constructors are used only for rvalues. Implicit conversions are allowed.
+	// std::initializer_list and vector constructors.
+	// Implicit conversions are allowed.
 	// Size and elements are derived from the initializer list / vectors. 
 
-	Matrix(std::initializer_list<std::vector<T>>&& init_list);
+	// TODO: replace with parsed strings? (initList copy semantics...)
+	Matrix(std::initializer_list<std::vector<T>> init_list);
 	Matrix(std::vector<std::vector<T>>&& vectors);
 
 	// Destructor and copy and move operations are implicit
-
+	
 	/*
 	 * -- Matrix Fill operation --
 	 * Fill types are
@@ -155,19 +156,10 @@ public:
 		return result;
 	}
 
-	// TODO: Matrix operations (Linear Algebra)
+	// TODO: Linear algebra
 	
-	// Relational operations
 
-	friend bool operator==(const Matrix& lhs, const Matrix& rhs)
-	{
-		return lhs.vectors_ == rhs.vectors_;
-	}
-
-	friend bool operator!=(const Matrix& lhs, const Matrix& rhs)
-	{
-		return !(lhs == rhs);
-	}
+	// Relational and equality operators.	
 
 	friend bool operator<(const Matrix& lhs, const Matrix& rhs)
 	{
@@ -189,10 +181,21 @@ public:
 		return !(lhs < rhs);
 	}
 
+	friend bool operator==(const Matrix& lhs, const Matrix& rhs)
+	{
+		return lhs.vectors_ == rhs.vectors_;
+	}
+
+	friend bool operator!=(const Matrix& lhs, const Matrix& rhs)
+	{
+		return !(lhs == rhs);
+	}
+
 	// Stream operator
 	friend std::ostream& operator<<(std::ostream& os, const Matrix& obj)
 	{
 		bool float_format = false;
+
 		// Change state of the stream
 		if constexpr (std::is_floating_point<T>())
 		{

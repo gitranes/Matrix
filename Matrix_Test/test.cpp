@@ -3,7 +3,6 @@
 #include "pch.h"
 
 #include "../matrix.h"
-#include "../VectorOps.h"
 
 
 namespace MatrixTests
@@ -44,7 +43,6 @@ namespace MatrixTests
 		Matrix<int> i_list_mat_;
 	};
 
-	
 	TEST(MatrixGTest, BadSizeTests)
 	{
 		// Death tests with erroneous initLists;
@@ -115,7 +113,8 @@ namespace MatrixTests
 		sq_mat_id -= sq_mat_id;
 		ASSERT_TRUE(sq_mat_id.all_of(null));
 	}
-
+	
+	
 	using SignedTypes = testing::Types<int, double>;
 	REGISTER_TYPED_TEST_CASE_P(
 		MatrixGTest,
@@ -123,6 +122,7 @@ namespace MatrixTests
 	);
 	INSTANTIATE_TYPED_TEST_CASE_P(MatrixIntTests, MatrixGTest, SignedTypes);
 
+	
 	// Rest of the unit-tests both signed and unsigned types
 	using TestTypes = testing::Types<unsigned, int, double>;
 	TYPED_TEST_CASE(MatrixGTest, TestTypes);
@@ -292,5 +292,4 @@ namespace MatrixTests
 				  << '\n'<< sq_mat_of << '\n' << std::endl;
 	}
 	*/
-
 }

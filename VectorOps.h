@@ -9,7 +9,7 @@
 
 
 namespace VectorOperations
-{
+{	
 	// std::plus and std::minus can't find the defined operations so I
 	// defined my own
 	template<typename T>
