@@ -89,6 +89,17 @@ public:
 	// conversions both ways, here it has nothing to do with access-specifying.
 	// See Helpers -> VectorOperations for the precise implementations.
 
+	friend Matrix& operator*=(Matrix& lhs, const Matrix& rhs)
+	{
+		assert(lhs.size() == rhs.size());
+
+		// TODO: Optimize *=
+		// Lazy way:
+		Matrix<T> result = lhs * rhs;
+		lhs.vectors_ = result.vectors_;
+
+		return lhs;
+	}
 	
 	friend Matrix& operator+=(Matrix& lhs, const Matrix& rhs)
 	{
@@ -140,6 +151,28 @@ public:
 			}
 		}
 		return *this;
+	}
+
+	// Matrix to the power of a positive whole number. Produces a new matrix
+	Matrix power(const int exponent)
+	{
+		// Negative exponents are not defined
+		assert(exponent >= 0);
+
+		if (exponent == 0)
+		{
+			// 0 exponent is the identity matrix
+			auto copy_mat = *this;
+			return copy_mat.fill(fill_type::identity);
+		}
+		// Else the result is given by successive matrix products
+		Matrix<T> result = *this;
+
+		for (auto e=1; e < exponent; ++e)
+		{
+			result *= (*this);
+		}
+		return result;
 	}
 	
 	// TODO: Linear algebra

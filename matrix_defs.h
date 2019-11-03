@@ -111,9 +111,6 @@ Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs)
 	// Matrix multiplication is defined for:
 	assert(lhs.row_size_ == rhs.col_size_);
 
-	const auto& lhs_data = lhs.vectors_;
-	const auto& rhs_data = rhs.vectors_;
-
 	// New matrix size : NxM * MxP = NxP.
 	const auto new_col_size = lhs.col_size_;
 	const auto new_row_size = rhs.row_size_;
@@ -129,7 +126,7 @@ Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs)
 		{
 			for (unsigned k = 0; k < lhs.row_size_; ++k)
 			{
-				result[i][j] += lhs_data[i][k] * rhs_data[k][j];
+				result[i][j] += lhs.vectors_[i][k] * rhs.vectors_[k][j];
 			}
 		}
 	}
@@ -217,8 +214,13 @@ bool Matrix<T>::if_main_diag(const T predicate) const
 template <typename T>
 void Matrix<T>::fill_identity()
 {
+	// TODO: Bench current impl. vs for-loop
+	
+	// Zero-init a new vectors_
+	std::vector<std::vector<T>> result(col_size_, std::vector<T>(row_size_));
+	
 	unsigned i = 0;
-	for (auto& vector : vectors_)
+	for (auto& vector : result)
 	{
 		// Matrices where col_size > row_size
 		if (i >= row_size_) break;
@@ -226,6 +228,8 @@ void Matrix<T>::fill_identity()
 		vector[i] = 1;
 		++i;
 	}
+	// Replace old
+	vectors_ = result;
 }
 
 template <typename T>

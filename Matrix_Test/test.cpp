@@ -61,6 +61,24 @@ namespace MatrixTests
 		);
 	}
 
+	TEST(MatrixGTest, PowerTest)
+	{
+		Matrix<int> sq_of(3, fill_type::ones);
+		Matrix<int> sq_id(3, fill_type::identity);
+
+		// 3x3 ones ^ 2 = 3x3 threes
+		auto sq_of_pw2 = sq_of.power(2);
+		ASSERT_TRUE(sq_of_pw2.all_of(3));
+
+		// 3x3 id ^ n = id
+		auto sq_id_pw4 = sq_id.power(4);
+		auto sq_of_pw0 = sq_of.power(0);
+		ASSERT_EQ(sq_id, sq_id_pw4);
+		ASSERT_EQ(sq_of_pw0, sq_id);
+
+		ASSERT_DEATH(sq_id.power(-4), "^Assertion failed");
+	}
+
 	// First tests are ran with signed types
 	TYPED_TEST_CASE_P(MatrixGTest);
 	
