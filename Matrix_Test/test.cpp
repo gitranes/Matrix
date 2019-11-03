@@ -273,6 +273,32 @@ namespace MatrixTests
 		ASSERT_DEATH(nsq_mat_of * sq_mat_null, "^Assertion failed");
 	}
 
+	TYPED_TEST(MatrixGTest, TransposeTest)
+	{
+		using matrix_type = Matrix<TypeParam>;
+
+		matrix_type& sq_mat_id = this->square_.fill(fill_type::identity);
+		matrix_type& nsq_mat1 = this->nsq_3by5_;
+		matrix_type& nsq_mat2 = this->nsq_5by3_;
+
+		// Identity transposed is identity
+		auto sq_mat_id2 = sq_mat_id;
+		ASSERT_EQ(sq_mat_id, sq_mat_id2);
+
+		// 3x5 transposed -> 5x3
+		nsq_mat1.transpose();
+		ASSERT_EQ(nsq_mat1.size(), nsq_mat2.size());
+
+		/*
+		// Test visually
+		nsq_mat1.fill(fill_type::randi);
+		std::cout << nsq_mat1 << std::endl;
+		
+		nsq_mat1.transpose();
+		std::cout << nsq_mat1 << std::endl;
+		*/
+	}
+	
 	// Commented out because the test clutters Google-test screen
 
 	/*

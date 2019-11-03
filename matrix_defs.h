@@ -67,7 +67,7 @@ Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list) :
 
 template <typename T>
 Matrix<T>::Matrix(const std::vector<std::vector<T>>& vectors) :
-	vectors_(vectors),
+	vectors_(std::move(vectors)),
 	col_size_(vectors_.size()),
 	row_size_(vectors_.begin()->size())
 {
@@ -252,14 +252,11 @@ void Matrix<T>::fill_randi()
 
 	if constexpr (std::is_same<T, char>())
 	{
-		// Rest of the ASCII range is unprintable garbage
+		// Rest of the ASCII range is unprintable
 		min = 41;
 		max = 126;
 	}
-	
-	using u_dist = std::uniform_int_distribution<int>;
-	static u_dist uid(min, max);
-
+	static std::uniform_int_distribution<int> uid(min, max);
 	fill_random(uid);
 }
 
@@ -269,8 +266,6 @@ void Matrix<T>::fill_rand()
 	const auto min = static_cast<float>(RandLimits::min);
 	const auto max = static_cast<float>(RandLimits::max);
 
-	using u_dist = std::uniform_real_distribution<float>;
-	static u_dist uid(min, max);
-
+	static std::uniform_real_distribution<float> uid(min, max);
 	fill_random(uid);
 }

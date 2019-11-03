@@ -32,7 +32,7 @@ enum class fill_type
 template<typename T>
 class Matrix;
 
-// Forward declare friend methods
+// Forward declare to-be-templated friend methods
 template<typename T>
 Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs);
 
@@ -69,11 +69,13 @@ public:
 	// std::initializer_list and vector constructors. Implicit conversions are
 	// allowed. Copies do not matter as the elements are trivially copyable.
 
-	// Size and elements are derived from the initializer list.
-	Matrix(std::initializer_list<std::vector<T>> init_list);
+	// Size and elements are derived from the initializer list. 
+	 Matrix(std::initializer_list<std::vector<T>> init_list);
+
+	// Size is derived from the vector
 	Matrix(const std::vector<std::vector<T>>& vectors);
 
-	// Destructor and copy and move operations are implicit
+	// Destructor, copy and move operations are implicit
 	
 
 	/*Fills the matrix according to the fill_type
@@ -141,7 +143,28 @@ public:
 	}
 	
 	// TODO: Linear algebra
-	
+
+
+	// Transposes the matrix
+	Matrix& transpose()
+	{
+		// Construct an empty vector (transposed result)
+		std::vector<std::vector<T>> t_vector(
+			row_size_, std::vector<T>(col_size_));
+
+		for (unsigned i = 0; i < col_size_; ++i)
+		{
+			for (unsigned j = 0; j < row_size_; ++j)
+			{
+				t_vector[j][i] += vectors_[i][j];
+			}
+		}
+		// Replace the old vector and swap the sizes
+		vectors_ = t_vector;
+		std::swap(col_size_, row_size_);
+		
+		return *this;
+	}
 
 	// Relational and equality operators.	
 
@@ -215,7 +238,7 @@ private:
 	void fill_randi();
 	void fill_rand();
 
-	// Combines the functionality of the previous functions
+	// Combines the functionality of the previous two functions
 	template<typename Dist>
 	void fill_random(const Dist& number_dist);
 };
