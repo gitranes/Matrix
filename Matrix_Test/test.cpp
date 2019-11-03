@@ -5,6 +5,8 @@
 #include "../matrix.h"
 
 
+#include<ostream>
+
 namespace MatrixTests
 {
 	// Matrix sizes as Google Test's constructor can't take arguments
@@ -272,6 +274,7 @@ namespace MatrixTests
 	}
 
 	// Commented out because the test clutters Google-test screen
+
 	/*
 	// This test can only be graded visually
 	TYPED_TEST(MatrixGTest, OutputRandTest)
@@ -282,7 +285,7 @@ namespace MatrixTests
 		matrix_type& nsq_mat = this->nsq_3by5_;
 
 		sq_mat.fill(fill_type::randi);
-		nsq_mat.fill(fill_type::randi);
+		nsq_mat.fill(fill_type::rand);
 
 		auto sq_mat_of = sq_mat;
 		sq_mat_of.fill(fill_type::ones);
@@ -292,4 +295,5 @@ namespace MatrixTests
 				  << '\n'<< sq_mat_of << '\n' << std::endl;
 	}
 	*/
+
 }

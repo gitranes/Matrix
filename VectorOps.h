@@ -58,11 +58,11 @@ namespace VectorOperations
 		return result;
 	}
 
-	// See +=, T has to be a class or signed
+	// See +=, T has to be a class or signed. Unsigned overflows are not
+	// checked.
 	template<typename T>
 	std::vector<T>& operator-=(std::vector<T>& lhs, const std::vector<T>& rhs)
 	{
-		static_assert(std::is_signed<T>() || std::is_class<T>());
 		assert(lhs.size() == rhs.size());
 
 		std::transform(lhs.begin(), lhs.end(), rhs.cbegin(),
@@ -76,7 +76,6 @@ namespace VectorOperations
 	std::vector<T> operator-(
 		const std::vector<T>& lhs, const std::vector<T>& rhs)
 	{
-		static_assert(std::is_signed<T>() || std::is_class<T>());
 		assert(lhs.size() == rhs.size());
 
 		std::vector<T> result;

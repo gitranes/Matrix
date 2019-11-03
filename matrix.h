@@ -10,13 +10,34 @@ namespace RandLimits
 	inline int max = 10;
 }
 
+/*
+* -- Fill types are --
+* zeros - fills matrix with zeros
+* ones - fills matrix with ones
+* identity - fills main diagonal with ones
+* randi - fills the matrix with random integers
+* rand - fills the matrix with random real numbers
+* >> Sensible with floating point types, for the rest result is
+* equivalent to using randi.
+*/
 enum class fill_type
 {
 	zeros,
 	ones,
 	identity,
-	randi
+	randi,
+	rand
 };
+
+template<typename T>
+class Matrix;
+
+// Forward declare friend methods
+template<typename T>
+Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs);
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const Matrix<T>& obj);
 
 
 template<typename T> 
@@ -45,27 +66,19 @@ public:
 	explicit Matrix(
 		const std::size_t n, const std::size_t m, fill_type fill_type);
 
+	// std::initializer_list and vector constructors. Implicit conversions are
+	// allowed. Copies do not matter as the elements are trivially copyable.
 
-	// std::initializer_list and vector constructors.
-	// Implicit conversions are allowed.
-	// Size and elements are derived from the initializer list / vectors. 
-
-	// TODO: replace with parsed strings? (initList copy semantics...)
+	// Size and elements are derived from the initializer list.
 	Matrix(std::initializer_list<std::vector<T>> init_list);
-	Matrix(std::vector<std::vector<T>>&& vectors);
+	Matrix(const std::vector<std::vector<T>>& vectors);
 
 	// Destructor and copy and move operations are implicit
 	
-	/*
-	 * -- Matrix Fill operation --
-	 * Fill types are
-	 *  > zeros - fills matrix with zeros
-	 *  > ones - fills matrix with ones
-	 *  > identity - fills main diagonal with ones
-	 *  > randi - fills with random integers/reals
-	 *    1 one can specify min and max by changing RandLimits::min/max
-	 *    2 for char the randi is limited to sensible ASCII chars (41,126)
-	 *      the rest is garbage (seperators, null, backspace)
+
+	/*Fills the matrix according to the fill_type
+	 * Min and max can be specified by changing RandLimits::min/max
+	 * For char the randi is limited to sensible ASCII chars (41, 126)
 	 */
 	Matrix& fill(fill_type fill_type);
 
@@ -83,7 +96,7 @@ public:
 		lhs.vectors_ += rhs.vectors_;
 		return lhs;
 	}
-
+	
 	friend Matrix& operator-=(Matrix& lhs, const Matrix& rhs)
 	{
 		using namespace VectorOperations;
@@ -111,7 +124,9 @@ public:
 		return lhs.vectors_ - rhs.vectors_;
 	}
 
-
+	// Matrix multiplication
+	friend Matrix<T> operator*<T>(const Matrix<T>& lhs, const Matrix<T>& rhs);
+	
 	// Scalar multiplication
 	Matrix& operator*(const T scalar)
 	{
@@ -125,37 +140,6 @@ public:
 		return *this;
 	}
 	
-	// Matrix multiplication
-	friend Matrix operator*(const Matrix& lhs, const Matrix& rhs)
-	{
-		// Matrix multiplication is defined for:
-		assert(lhs.row_size_ == rhs.col_size_);
-
-		const auto& lhs_data = lhs.vectors_;
-		const auto& rhs_data = rhs.vectors_;
-
-		// New matrix size : NxM * MxP = NxP.
-		const auto new_col_size = lhs.col_size_;
-		const auto new_row_size = rhs.row_size_;
-
-		// result is initialized to zero.
-		std::vector<std::vector<T>> result
-			(new_col_size, std::vector<T>(new_col_size, 0));
-
-		// Matrix multiplication
-		for (unsigned i = 0; i < new_col_size; ++i)
-		{
-			for (unsigned j = 0; j < new_row_size; ++j)
-			{
-				for (unsigned k = 0; k < lhs.row_size_; ++k)
-				{
-					result[i][j] += lhs_data[i][k] * rhs_data[k][j];
-				}
-			}
-		}
-		return result;
-	}
-
 	// TODO: Linear algebra
 	
 
@@ -192,37 +176,9 @@ public:
 	}
 
 	// Stream operator
-	friend std::ostream& operator<<(std::ostream& os, const Matrix& obj)
-	{
-		bool float_format = false;
+	friend std::ostream& operator<< <T>(std::ostream& os, const Matrix<T>& obj);
 
-		// Change state of the stream
-		if constexpr (std::is_floating_point<T>())
-		{
-			os << std::fixed << std::setprecision(2) << std::setfill(' ');
-			float_format = true;
-		} else {
-			os << std::setfill(' ');
-		}
-		
-		for (const auto& vec : obj.vectors_)
-		{
-			os << std::endl << "|";
-			for (const T& element : vec)
-			{
-				if (float_format)
-				{
-					os << " " << std::setw(5) << element << " " << std::setw(2);
-				}
-				else {
-					os << std::setw(4) << element << std::setw(4);
-				}
-			}
-			os << " |" << std::endl;
-		}
-		return os;
-	}
-
+	
 	// Used mostly in unit-testing
 
 	// Checks if all of the elements are certain value
@@ -257,6 +213,11 @@ private:
 
 	// Fills matrix with random whole numbers / reals
 	void fill_randi();
+	void fill_rand();
+
+	// Combines the functionality of the previous functions
+	template<typename Dist>
+	void fill_random(const Dist& number_dist);
 };
 
 // Less clutter from the definitions

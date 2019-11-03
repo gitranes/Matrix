@@ -16,7 +16,8 @@ Matrix<T>::Matrix(const std::size_t n) :
 	col_size_(n),
 	row_size_(n)
 {
-	static_assert(std::is_arithmetic<T>());
+	static_assert(std::is_arithmetic<T>(), 
+		"Only arithmetic types are supported");
 }
 
 template <typename T>
@@ -25,7 +26,8 @@ Matrix<T>::Matrix(const std::size_t n, const std::size_t m) :
 	col_size_(n),
 	row_size_(m)
 {
-	static_assert(std::is_arithmetic<T>());
+	static_assert(std::is_arithmetic<T>(),
+		"Only arithmetic types are supported");
 }
 
 template <typename T>
@@ -34,7 +36,8 @@ Matrix<T>::Matrix(const std::size_t n, const fill_type fill_type) :
 	col_size_(n),
 	row_size_(n)
 {
-	static_assert(std::is_arithmetic<T>());
+	static_assert(std::is_arithmetic<T>(),
+		"Only arithmetic types are supported");
 	fill(fill_type);
 }
 
@@ -44,7 +47,8 @@ Matrix<T>::Matrix(const std::size_t n, const std::size_t m, fill_type fill_type)
 	col_size_(n),
 	row_size_(m)
 {
-	static_assert(std::is_arithmetic<T>());
+	static_assert(std::is_arithmetic<T>(),
+		"Only arithmetic types are supported");
 	fill(fill_type);
 }
 
@@ -54,19 +58,21 @@ Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list) :
 	col_size_(init_list.size()),
 	row_size_(init_list.begin()->size())
 {
-	static_assert(std::is_arithmetic<T>());
+	static_assert(std::is_arithmetic<T>(),
+		"Only arithmetic types are supported");
 
 	// Assert that the i-lists' sizes are consistent.
 	assert(check_matrix_rows());
 }
 
 template <typename T>
-Matrix<T>::Matrix(std::vector<std::vector<T>>&& vectors) :
-	vectors_(std::move(vectors)),
+Matrix<T>::Matrix(const std::vector<std::vector<T>>& vectors) :
+	vectors_(vectors),
 	col_size_(vectors_.size()),
 	row_size_(vectors_.begin()->size())
 {
-	static_assert(std::is_arithmetic<T>());
+	static_assert(std::is_arithmetic<T>(),
+		"Only arithmetic types are supported");
 
 	// Assert that the vectors' sizes are consistent.
 	assert(check_matrix_rows());
@@ -92,7 +98,42 @@ Matrix<T>& Matrix<T>::fill(fill_type fill_type)
 	{
 		fill_randi();
 	}
+	else if (fill_type == fill_type::rand)
+	{
+		fill_rand();
+	}
 	return *this;
+}
+
+template <typename T>
+Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs)
+{
+	// Matrix multiplication is defined for:
+	assert(lhs.row_size_ == rhs.col_size_);
+
+	const auto& lhs_data = lhs.vectors_;
+	const auto& rhs_data = rhs.vectors_;
+
+	// New matrix size : NxM * MxP = NxP.
+	const auto new_col_size = lhs.col_size_;
+	const auto new_row_size = rhs.row_size_;
+
+	// result is initialized to zero.
+	std::vector<std::vector<T>> result
+	(new_col_size, std::vector<T>(new_col_size, 0));
+
+	// Matrix multiplication
+	for (unsigned i = 0; i < new_col_size; ++i)
+	{
+		for (unsigned j = 0; j < new_row_size; ++j)
+		{
+			for (unsigned k = 0; k < lhs.row_size_; ++k)
+			{
+				result[i][j] += lhs_data[i][k] * rhs_data[k][j];
+			}
+		}
+	}
+	return result;
 }
 
 template <typename T>
@@ -105,6 +146,41 @@ bool Matrix<T>::check_matrix_rows() const
 			return row_vec.size() == row_size;
 		}
 	);
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const Matrix<T>& obj)
+{
+	bool float_format = false;
+
+	// Change state of the stream
+	if constexpr (std::is_floating_point<T>())
+	{
+		os << std::fixed << std::setprecision(2) << std::setfill(' ');
+		float_format = true;
+	}
+	else
+	{
+		os << std::setfill(' ');
+	}
+
+	for (const auto& vec : obj.vectors_)
+	{
+		os << std::endl << "|";
+		for (const T& element : vec)
+		{
+			if (float_format)
+			{
+				os << " " << std::setw(5) << element << " " << std::setw(2);
+			}
+			else
+			{
+				os << std::setw(4) << element << std::setw(4);
+			}
+		}
+		os << " |" << std::endl;
+	}
+	return os;
 }
 
 template <typename T>
@@ -153,10 +229,24 @@ void Matrix<T>::fill_identity()
 }
 
 template <typename T>
-void Matrix<T>::fill_randi()
+template <typename Dist>
+void Matrix<T>::fill_random(const Dist& number_dist) 
 {
 	static std::random_device rd;
 	static std::mt19937 rand_eng(rd());
+	
+	for (auto& vector : vectors_)
+	{
+		for (T& element : vector)
+		{
+			element = static_cast<T>(number_dist(rand_eng));
+		}
+	}
+}
+
+template <typename T>
+void Matrix<T>::fill_randi()
+{
 	int min = RandLimits::min;
 	int max = RandLimits::max;
 
@@ -166,35 +256,21 @@ void Matrix<T>::fill_randi()
 		min = 41;
 		max = 126;
 	}
-	// Wish I had concepts
+	
+	using u_dist = std::uniform_int_distribution<int>;
+	static u_dist uid(min, max);
 
-	// Real random numbers
-	if constexpr (std::is_floating_point<T>())
-	{
-		const auto f_min = static_cast<float>(min);
-		const auto f_max = static_cast<float>(max);
+	fill_random(uid);
+}
 
-		using u_dist = std::uniform_real_distribution<float>;
-		static u_dist uid(f_min, f_max);
+template <typename T>
+void Matrix<T>::fill_rand()
+{
+	const auto min = static_cast<float>(RandLimits::min);
+	const auto max = static_cast<float>(RandLimits::max);
 
-		for (auto& vector : vectors_)
-		{
-			for (auto& element : vector)
-			{
-				element = uid(rand_eng);
-			}
-		}
-	}
-	else // Whole random numbers
-	{
-		using u_dist = std::uniform_int_distribution<int>;
-		static u_dist uid(min, max);
-		for (auto& vector : vectors_)
-		{
-			for (auto& element : vector)
-			{
-				element = uid(rand_eng);
-			}
-		}
-	}
+	using u_dist = std::uniform_real_distribution<float>;
+	static u_dist uid(min, max);
+
+	fill_random(uid);
 }
