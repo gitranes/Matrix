@@ -134,15 +134,64 @@ Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs)
 }
 
 template <typename T>
-bool Matrix<T>::check_matrix_rows() const 
+Matrix<T> Matrix<T>::power(const int exponent)
 {
-	return std::all_of(
-		vectors_.cbegin(), vectors_.cend(),
-		[row_size = row_size_](const std::vector<T>& row_vec)
+	// Negative exponents are not defined
+	assert(exponent >= 0);
+
+	if (exponent == 0)
+	{
+		// 0 exponent is the identity matrix
+		auto copy_mat = *this;
+		return copy_mat.fill(fill_type::identity);
+	}
+	// Else the result is given by successive matrix products
+	Matrix<T> result = *this;
+
+	for (auto e = 1; e < exponent; ++e)
+	{
+		result *= (*this);
+	}
+	return result;
+}
+
+template <typename T>
+Matrix<T>& Matrix<T>::transpose()
+{
+	// Construct an empty vector (transposed result)
+	std::vector<std::vector<T>> t_vector(
+		row_size_, std::vector<T>(col_size_));
+
+	for (unsigned i = 0; i < col_size_; ++i)
+	{
+		for (unsigned j = 0; j < row_size_; ++j)
 		{
-			return row_vec.size() == row_size;
+			t_vector[j][i] += vectors_[i][j];
 		}
-	);
+	}
+	// Replace the old vector and swap the sizes
+	vectors_ = t_vector;
+	std::swap(col_size_, row_size_);
+
+	return *this;
+}
+
+template<typename T>
+LU<T> Matrix<T>::lu()
+{
+	LU<T> lu;
+	return compute_lu(lu, 0);
+}
+
+template<typename T>
+LU<T>& compute_lu(LU<T>& lu, int n)
+{
+	//TODO: represent vectors as Matrices.
+	using vector = std::vector<T>;
+	
+	vector l_n = vector(col_size_);
+
+	
 }
 
 template <typename T>
@@ -209,6 +258,18 @@ bool Matrix<T>::if_main_diag(const T predicate) const
 		++i;
 	}
 	return true;
+}
+
+template <typename T>
+bool Matrix<T>::check_matrix_rows() const
+{
+	return std::all_of(
+		vectors_.cbegin(), vectors_.cend(),
+		[row_size = row_size_](const std::vector<T>& row_vec)
+		{
+			return row_vec.size() == row_size;
+		}
+	);
 }
 
 template <typename T>

@@ -1,11 +1,8 @@
 // Google test file
 
 #include "pch.h"
-
 #include "../matrix.h"
 
-
-#include<ostream>
 
 namespace MatrixTests
 {
@@ -24,7 +21,7 @@ namespace MatrixTests
 	};
 
 
-	// Test class, can reach protected members of Matrix.
+	// Test class
 	template<typename T>
 	class MatrixGTest : public ::testing::Test
 	{
@@ -45,6 +42,9 @@ namespace MatrixTests
 		Matrix<int> i_list_mat_;
 	};
 
+	// Only using works for TEST_F-cases MatrixGTest<int> doesn't... why
+	using int_typed = MatrixGTest<int>;
+
 	TEST(MatrixGTest, BadSizeTests)
 	{
 		// Death tests with erroneous initLists;
@@ -61,10 +61,11 @@ namespace MatrixTests
 		);
 	}
 
-	TEST(MatrixGTest, PowerTest)
+	TEST_F(int_typed, PowerTest)
 	{
-		Matrix<int> sq_of(3, fill_type::ones);
-		Matrix<int> sq_id(3, fill_type::identity);
+		auto& sq_of = this->square_.fill(fill_type::ones);
+		auto sq_id = sq_of;
+		sq_id.fill(fill_type::identity);
 
 		// 3x3 ones ^ 2 = 3x3 threes
 		auto sq_of_pw2 = sq_of.power(2);
@@ -79,6 +80,16 @@ namespace MatrixTests
 		ASSERT_DEATH(sq_id.power(-4), "^Assertion failed");
 	}
 
+	TEST_F(int_typed, TraceTest)
+	{
+		auto& sq_of = this->square_.fill(fill_type::ones);
+		auto sq_id = sq_of;
+		sq_id.fill(fill_type::identity);
+
+		ASSERT_EQ(sq_of.trace(), sq_id.trace());
+		ASSERT_EQ(sq_id.trace(), sq_id.size().first);
+	}
+	
 	// First tests are ran with signed types
 	TYPED_TEST_CASE_P(MatrixGTest);
 	

@@ -32,6 +32,15 @@ enum class fill_type
 template<typename T>
 class Matrix;
 
+// Stores the LU-factorization result
+template<typename T>
+struct LU
+{
+	// L is lower and U is upper triangular.
+	Matrix<T> L;
+	Matrix<T> U;
+};
+
 // Forward declare to-be-templated friend methods
 template<typename T>
 Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs);
@@ -153,51 +162,33 @@ public:
 		return *this;
 	}
 
-	// Matrix to the power of a positive whole number. Produces a new matrix
-	Matrix power(const int exponent)
+	// Matrix to the power of a positive whole number. Returns a new Matrix.
+	Matrix power(const int exponent);
+
+	// Computes the trace of the matrix
+	T trace()
 	{
-		// Negative exponents are not defined
-		assert(exponent >= 0);
-
-		if (exponent == 0)
+		// Square matrices only
+		assert(col_size_ == row_size_);
+		
+		T result(0);
+		for (unsigned i=0, j=0; i < col_size_; ++i, ++j)
 		{
-			// 0 exponent is the identity matrix
-			auto copy_mat = *this;
-			return copy_mat.fill(fill_type::identity);
-		}
-		// Else the result is given by successive matrix products
-		Matrix<T> result = *this;
-
-		for (auto e=1; e < exponent; ++e)
-		{
-			result *= (*this);
+			result += vectors_[i][j];
 		}
 		return result;
 	}
 	
 	// TODO: Linear algebra
 
-
 	// Transposes the matrix
-	Matrix& transpose()
-	{
-		// Construct an empty vector (transposed result)
-		std::vector<std::vector<T>> t_vector(
-			row_size_, std::vector<T>(col_size_));
+	Matrix& transpose();
 
-		for (unsigned i = 0; i < col_size_; ++i)
-		{
-			for (unsigned j = 0; j < row_size_; ++j)
-			{
-				t_vector[j][i] += vectors_[i][j];
-			}
-		}
-		// Replace the old vector and swap the sizes
-		vectors_ = t_vector;
-		std::swap(col_size_, row_size_);
-		
-		return *this;
-	}
+	/**
+	 * \brief Computes LU-factorization
+	 * \return LU-struct with members L and U.
+	 */
+	LU<T> lu();
 
 	// Relational and equality operators.	
 
@@ -274,6 +265,9 @@ private:
 	// Combines the functionality of the previous two functions
 	template<typename Dist>
 	void fill_random(const Dist& number_dist);
+
+	// Computes the actual LU-fact.
+	LU<T>& compute_lu(LU<T>& lu);
 };
 
 // Less clutter from the definitions
