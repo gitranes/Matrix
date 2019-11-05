@@ -2,13 +2,7 @@
 
 #include "pch.h"
 #include "VectorOps.h"
-
-
-namespace RandLimits
-{
-	inline int min = 0;
-	inline int max = 10;
-}
+#include "Fraction.h"
 
 /*
 * -- Fill types are --
@@ -32,15 +26,6 @@ enum class fill_type
 template<typename T>
 class Matrix;
 
-// Stores the LU-factorization result
-template<typename T>
-struct LU
-{
-	// L is lower and U is upper triangular.
-	Matrix<T> L;
-	Matrix<T> U;
-};
-
 // Forward declare to-be-templated friend methods
 template<typename T>
 Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs);
@@ -49,14 +34,13 @@ template<typename T>
 std::ostream& operator<<(std::ostream& os, const Matrix<T>& obj);
 
 
+// TODO: Matrix Base Class
+// TODO: Represent Matrix as column vectors instead row vectors
+
 template<typename T> 
 class Matrix
 {
 public:
-
-	// Null-matrix
-	Matrix() : col_size_(0), row_size_(0) {};
-
 	// Non-initializing constructors:
 
 	// Square Matrix constructor
@@ -86,10 +70,27 @@ public:
 
 	// Destructor, copy and move operations are implicit
 	
+	// TODO: Implement operator[] to return columns
+	
+	// Returns a ref to the corresponding row. Does basic bounds checking.
+	std::vector<T>& operator[](const std::size_t index)
+	{
+		assert(index <= col_size_ - 1);
+		return vectors_[index];
+	}
 
+	// Returns a const-ref to the corresponding row. Basic bounds checking
+	// is performed.
+	const std::vector<T>& operator[](const std::size_t index) const
+	{
+		assert(index <= col_size_ - 1);
+		return vectors_[index];
+	}
+	
 	/*Fills the matrix according to the fill_type
-	 * Min and max can be specified by changing RandLimits::min/max
-	 * For char the randi is limited to sensible ASCII chars (41, 126)
+	 * Min and max can be specified with set_rand_limits() or set_rand_min()/
+	 * set_rand_max(). For char-types printable characters are in range
+	 * [41, 126]
 	 */
 	Matrix& fill(fill_type fill_type);
 
@@ -150,16 +151,16 @@ public:
 	friend Matrix<T> operator*<T>(const Matrix<T>& lhs, const Matrix<T>& rhs);
 	
 	// Scalar multiplication
-	Matrix& operator*(const T scalar)
+	friend Matrix& operator*(const T scalar, Matrix<T>& rhs)
 	{
-		for (auto& vector : vectors_)
+		for (auto& vector : rhs.vectors_)
 		{
 			for (T& element : vector)
 			{
 				element *= scalar;
 			}
 		}
-		return *this;
+		return rhs;
 	}
 
 	// Matrix to the power of a positive whole number. Returns a new Matrix.
@@ -184,11 +185,54 @@ public:
 	// Transposes the matrix
 	Matrix& transpose();
 
+	// Struct for holding result of the LU-factorization
+	struct LU
+	{
+		// Constructors takes the size of the matrix we want to produce LU for
+		// and initializes the L and U according to Doolittle's algorithm
+
+		// TODO: Refactor this pile of dung
+	
+		// LU constructor is always constructed from a given Matrix.
+		explicit LU(const Matrix<Fraction>& mat) :
+			L(mat.size().first, fill_type::identity),
+			U(mat)
+		{}
+
+		// L is square and lower triangular
+		Matrix<Fraction> L;
+
+		// U is upper triangular
+		Matrix<Fraction> U;
+	};
+
+	// TODO: LU for floating points
 	/**
 	 * \brief Computes LU-factorization
 	 * \return LU-struct with members L and U.
 	 */
-	LU<T> lu();
+	[[nodiscard]] LU lu() const
+	{
+		// static_assert(std::is_floating_point<T>(), "Not supported yet");
+
+		// Construct a Fraction vector
+		std::vector<std::vector<Fraction>> frac_data(
+			col_size_, std::vector<Fraction>(row_size_));
+
+		// Assign values of this
+		for (unsigned i=0; i < col_size_; ++i)
+		{
+			for (unsigned j=0; j < row_size_; ++j)
+			{
+				frac_data[i][j] = vectors_[i][j];
+			}
+		}
+		// converted matrix
+		Matrix<Fraction> frac_mat(frac_data);
+
+		LU lu(frac_mat);
+		return compute_lu(lu, 1);
+	}
 
 	// Relational and equality operators.	
 
@@ -234,6 +278,9 @@ public:
 	// Checks the main diagonal for certain value
 	[[nodiscard]] bool if_main_diag(const T predicate) const;
 
+	// Check for upper and lower triangular
+	[[nodiscard]] bool is_upper_triang() const;
+	[[nodiscard]] bool is_lower_triang() const;
 	
 	// Return size of Matrix as pair
 	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const noexcept
@@ -248,6 +295,14 @@ private:
 	// Matrix's size
 	std::size_t col_size_;
 	std::size_t row_size_;
+
+	// TODO: mutable RandLimits
+	struct RandLimits
+	{
+		int min{ 0 };
+		int max{ 10 };
+	};
+	inline static RandLimits rand_limits_;
 
 	// Size-checking (initList / vector constructors)
 	[[nodiscard]] bool check_matrix_rows() const;
@@ -266,9 +321,13 @@ private:
 	template<typename Dist>
 	void fill_random(const Dist& number_dist);
 
-	// Computes the actual LU-fact.
-	LU<T>& compute_lu(LU<T>& lu);
+	// Recursive function that computes the LU-fact using Doolittle's algorithm.
+	LU& compute_lu(LU& lu, int n) const;
 };
+
+// Alias template for LU struct
+template<typename T>
+using LU_t = typename Matrix<T>::LU;
 
 // Less clutter from the definitions
 #include "matrix_defs.h"

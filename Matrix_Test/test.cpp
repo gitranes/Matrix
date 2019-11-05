@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "../matrix.h"
 
+// TODO: Test vectors
 
 namespace MatrixTests
 {
@@ -19,7 +20,6 @@ namespace MatrixTests
 					{0, 0, 0, 1, 0},
 					{0, 0, 0, 0, 1}
 	};
-
 
 	// Test class
 	template<typename T>
@@ -61,9 +61,26 @@ namespace MatrixTests
 		);
 	}
 
+	TEST(MatrixGTest, LUfactTest)
+	{
+		using matrix_type = Matrix<Fraction>;
+
+		matrix_type sq_id(3, fill_type::identity);
+		const auto [L, U] = sq_id.lu();
+		ASSERT_EQ(L * U, sq_id);
+
+		Matrix<Fraction> mat = { {1, 1, 0},{1, 1, 0},{0, 0, 1} };
+		const auto [L2, U2] = mat.lu();
+		ASSERT_EQ(L2 * U2, mat);
+
+		matrix_type sq_of(3, fill_type::ones);
+		const auto [L3, U3] = sq_of.lu();
+		ASSERT_EQ(L3 * U3, sq_of);
+	}
+
 	TEST_F(int_typed, PowerTest)
 	{
-		auto& sq_of = this->square_.fill(fill_type::ones);
+		auto& sq_of = square_.fill(fill_type::ones);
 		auto sq_id = sq_of;
 		sq_id.fill(fill_type::identity);
 
@@ -82,12 +99,12 @@ namespace MatrixTests
 
 	TEST_F(int_typed, TraceTest)
 	{
-		auto& sq_of = this->square_.fill(fill_type::ones);
+		auto& sq_of = square_.fill(fill_type::ones);
 		auto sq_id = sq_of;
 		sq_id.fill(fill_type::identity);
 
 		ASSERT_EQ(sq_of.trace(), sq_id.trace());
-		ASSERT_EQ(sq_id.trace(), sq_id.size().first);
+		ASSERT_EQ(sq_id.trace(), static_cast<int>(sq_id.size().first));
 	}
 	
 	// First tests are ran with signed types
@@ -253,11 +270,11 @@ namespace MatrixTests
 		copy_sq.fill(fill_type::randi);
 		
 		// scalar * null_mat = null_mat
-		sq_mat_null* TypeParam(4);
+		TypeParam(4) * sq_mat_null;
 		ASSERT_TRUE(sq_mat_null.all_of(null));
 
 		// null(scalar) * matrix = null_mat
-		copy_sq * null;
+		null * copy_sq;
 		ASSERT_TRUE(copy_sq.all_of(null));
 	}
 
