@@ -20,7 +20,7 @@ namespace MatrixTests
 					{0, 0, 0, 1, 0},
 					{0, 0, 0, 0, 1}
 	};
-
+	
 	// Test class
 	template<typename T>
 	class MatrixGTest : public ::testing::Test
@@ -60,24 +60,7 @@ namespace MatrixTests
 			}), "^Assertion failed"
 		);
 	}
-
-	TEST(MatrixGTest, LUfactTest)
-	{
-		using matrix_type = Matrix<Fraction>;
-
-		matrix_type sq_id(3, fill_type::identity);
-		const auto [L, U] = sq_id.lu();
-		ASSERT_EQ(L * U, sq_id);
-
-		Matrix<Fraction> mat = { {1, 1, 0},{1, 1, 0},{0, 0, 1} };
-		const auto [L2, U2] = mat.lu();
-		ASSERT_EQ(L2 * U2, mat);
-
-		matrix_type sq_of(3, fill_type::ones);
-		const auto [L3, U3] = sq_of.lu();
-		ASSERT_EQ(L3 * U3, sq_of);
-	}
-
+	
 	TEST_F(int_typed, PowerTest)
 	{
 		auto& sq_of = square_.fill(fill_type::ones);
@@ -111,17 +94,16 @@ namespace MatrixTests
 	TYPED_TEST_CASE_P(MatrixGTest);
 	
 
-	TYPED_TEST_P(MatrixGTest, RelationalTest)
+	TYPED_TEST_P(MatrixGTest, EqualityTest)
 	{
 		using matrix_type = Matrix<TypeParam>;
 
 		matrix_type& sq_mat_of = this->square_.fill(fill_type::ones);
 		matrix_type& nsq_mat = this->nsq_3by5_.fill(fill_type::ones);
 
-		// Matrix copies and 2x3 matrix
+		// Matrix copies
 		auto sq_mat_null = sq_mat_of;
 		auto nsq_mat_zf = nsq_mat;
-		auto mat2_by3 = matrix_type(2, 3, fill_type::zeros);
 
 		sq_mat_null.fill(fill_type::zeros);
 		nsq_mat_zf.fill(fill_type::zeros);
@@ -130,16 +112,6 @@ namespace MatrixTests
 		ASSERT_EQ(sq_mat_null, sq_mat_null);
 		ASSERT_EQ(nsq_mat, nsq_mat);
 		ASSERT_NE(sq_mat_null, nsq_mat_zf);
-
-		// Test >, >=, < an <=
-		ASSERT_GT(sq_mat_of, sq_mat_null);
-		ASSERT_LT(sq_mat_null, sq_mat_of);
-		ASSERT_GE(nsq_mat_zf, sq_mat_null);
-		ASSERT_LE(sq_mat_null, nsq_mat_zf);
-
-		// Test >
-		ASSERT_GT(sq_mat_of, mat2_by3);
-		ASSERT_GT(nsq_mat_zf, mat2_by3);
 	}
 
 	TYPED_TEST_P(MatrixGTest, SubtractionTest)
@@ -162,11 +134,29 @@ namespace MatrixTests
 		ASSERT_TRUE(sq_mat_id.all_of(null));
 	}
 	
+	TYPED_TEST_P(MatrixGTest, LUFactTest)
+	{
+		using matrix_type = Matrix<TypeParam>;
+
+		matrix_type sq_id(3, fill_type::identity);
+		const auto [L, U] = sq_id.lu();
+		ASSERT_EQ(L * U, sq_id);
+		
+		matrix_type mat = { {1, 1, 0},{1, 1, 0},{0, 0, 1} };
+		const auto [L2, U2] = mat.lu();
+		ASSERT_EQ(L2 * U2, mat);
+
+		matrix_type sq_of(3, fill_type::randi);
+		const auto [L3, U3] = sq_of.lu();
+		ASSERT_EQ(L3 * U3, sq_of);
+
+		std::cout << L3 << U3 << std::endl;
+	}
 	
 	using SignedTypes = testing::Types<int, double>;
 	REGISTER_TYPED_TEST_CASE_P(
 		MatrixGTest,
-		RelationalTest, SubtractionTest
+		EqualityTest, SubtractionTest, LUFactTest
 	);
 	INSTANTIATE_TYPED_TEST_CASE_P(MatrixIntTests, MatrixGTest, SignedTypes);
 

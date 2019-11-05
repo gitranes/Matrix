@@ -58,8 +58,7 @@ namespace VectorOperations
 		return result;
 	}
 
-	// See +=, T has to be a class or signed. Unsigned overflows are not
-	// checked.
+	// See +=, unsigned overflows are not checked.
 	template<typename T>
 	std::vector<T>& operator-=(std::vector<T>& lhs, const std::vector<T>& rhs)
 	{
@@ -71,7 +70,7 @@ namespace VectorOperations
 		return lhs;
 	}
 
-	// See +, T has to be class or signed
+	// See +, unsigned overflows are not checked.
 	template<typename T>
 	std::vector<T> operator-(
 		const std::vector<T>& lhs, const std::vector<T>& rhs)

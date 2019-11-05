@@ -15,5 +15,6 @@
 #include <cassert>
 #include <ostream>
 #include <random>
+#include "Fraction.h"
 
 #endif //PCH_H

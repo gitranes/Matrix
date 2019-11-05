@@ -100,12 +100,9 @@ Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs)
 	// New matrix size : NxM * MxP = NxP.
 	const auto new_col_size = lhs.col_size_;
 	const auto new_row_size = rhs.row_size_;
-
-	// TODO: Use matrix operator[] instead
 	
 	// result is initialized to zero.
-	std::vector<std::vector<T>> result
-	(new_col_size, std::vector<T>(new_col_size, 0));
+	Matrix<T> result(new_col_size, new_row_size);
 
 	// Matrix multiplication
 	for (unsigned i = 0; i < new_col_size; ++i)
@@ -114,7 +111,7 @@ Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs)
 		{
 			for (unsigned k = 0; k < lhs.row_size_; ++k)
 			{
-				result[i][j] += lhs.vectors_[i][k] * rhs.vectors_[k][j];
+				result[i][j] += lhs[i][k] * rhs[k][j];
 			}
 		}
 	}
@@ -158,7 +155,7 @@ Matrix<T>& Matrix<T>::transpose()
 		}
 	}
 	// Replace the old vector and swap the sizes
-	vectors_ = t_vector;
+	vectors_ = std::move(t_vector);
 	std::swap(col_size_, row_size_);
 
 	return *this;
@@ -180,23 +177,25 @@ std::ostream& operator<<(std::ostream& os, const Matrix<T>& obj)
 		os << std::setfill(' ');
 	}
 
+	// TODO: Calculate largest element width
+	
 	for (const auto& vec : obj.vectors_)
 	{
-		os << std::endl << "|";
+		os << std::endl << '|' << std::setw(4) << std::internal;
 		for (const T& element : vec)
 		{
 			if (float_format)
 			{
-				os << " " << std::setw(5) << element << " " << std::setw(2);
+				os << ' ' << element << ' ' << std::setw(4);
 			}
 			else
 			{
-				os << std::setw(4) << element << std::setw(4);
+				os << element << std::setw(4);
 			}
 		}
-		os << " |" << std::endl;
+		os << '|' << std::endl;
 	}
-	return os;
+	return os << std::endl;
 }
 
 template <typename T>
@@ -231,7 +230,7 @@ bool Matrix<T>::if_main_diag(const T predicate) const
 }
 
 template <typename T>
-bool Matrix<T>::is_upper_triang() const
+bool Matrix<T>::is_upper_triangular() const
 {
 	for (unsigned i=1; i < col_size_; ++i)
 	{
@@ -244,7 +243,7 @@ bool Matrix<T>::is_upper_triang() const
 }
 
 template <typename T>
-bool Matrix<T>::is_lower_triang() const
+bool Matrix<T>::is_lower_triangular() const
 {
 	for (unsigned i = 0; i < col_size_; ++i)
 	{
@@ -325,35 +324,43 @@ void Matrix<T>::fill_rand()
 	fill_random(uid);
 }
 
-template<typename T>
-LU_t<T>& Matrix<T>::compute_lu(LU_t<T>& lu, int n) const
+template <typename T>
+LU_t<T>& Matrix<T>::compute_lu(LU& lu, const unsigned n) const
 {
 	// Fetch the L and U
 	auto& [L, U] = lu;
 
 	// End recursion
-	if (L.is_lower_triang() && U.is_upper_triang()) return lu;
-	
-	// Doolittle's algorithm
-	Matrix<Fraction> l_n(col_size_, 1);
-	const T pivot = T(U[n - 1][n - 1]);
+	if (L.is_lower_triangular() && U.is_upper_triangular()) return lu;
+
+	// Start Doolittle algorithm
+	Matrix<LU_T> l_n(col_size_, 1);
+	const auto pivot = U[n - 1][n - 1];
+
+	// TODO: When pivot is zero (LU)
 	assert(pivot != 0);
 
-	const Fraction factor(1, int(pivot));
-
+	LU_T factor;
+	if constexpr (std::is_floating_point<T>()) {
+		factor = static_cast<LU_T>(1) / pivot;
+	}
+	else {
+		factor = Fraction(1, pivot);
+	}
+		
 	// Fetch the elements to the vector l_n (Doolittle's)
-	const unsigned col = n - 1;
-	for (unsigned i = n; i < col_size_; ++i)
+	const auto col = n - 1;
+	for (auto i = n; i < col_size_; ++i)
 	{
 		l_n[i][0] = U[i][col];
 	}
-	factor * l_n;
+	factor* l_n;
 
 	// Construct a transposed natural base vector e_n
-	Matrix<Fraction> e_nt(1, col_size_);
+	Matrix<LU_T> e_nt(1, col_size_);
 	e_nt[0][n - 1] = 1;
 
-	const Matrix<Fraction> identity(col_size_, fill_type::identity);
+	const Matrix<LU_T> identity(col_size_, fill_type::identity);
 	auto L_n_term = l_n * e_nt;
 
 	// Calculate the L_n matrix
@@ -363,5 +370,7 @@ LU_t<T>& Matrix<T>::compute_lu(LU_t<T>& lu, int n) const
 	U = (L_n *= U);
 	L += L_n_term;
 
-	return compute_lu(lu, ++n);
+	return compute_lu(lu, n + 1);
 }
+
+

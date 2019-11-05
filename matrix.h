@@ -2,7 +2,6 @@
 
 #include "pch.h"
 #include "VectorOps.h"
-#include "Fraction.h"
 
 /*
 * -- Fill types are --
@@ -16,6 +15,7 @@
 */
 enum class fill_type
 {
+	// TODO: Remove zeros fill-type?
 	zeros,
 	ones,
 	identity,
@@ -35,7 +35,6 @@ std::ostream& operator<<(std::ostream& os, const Matrix<T>& obj);
 
 
 // TODO: Matrix Base Class
-// TODO: Represent Matrix as column vectors instead row vectors
 
 template<typename T> 
 class Matrix
@@ -69,8 +68,24 @@ public:
 	Matrix(const std::vector<std::vector<T>>& vectors);
 
 	// Destructor, copy and move operations are implicit
-	
-	// TODO: Implement operator[] to return columns
+
+	// Conversion from integral types to Fraction
+	template <typename U = T>
+	operator std::enable_if_t<std::is_integral_v<U>, Matrix<Fraction>>() const
+	{
+		// Construct a Fraction Matrix
+		Matrix<Fraction> frac_mat(col_size_, row_size_);
+
+		// Assign values from *this
+		for (unsigned i = 0; i < col_size_; ++i)
+		{
+			for (unsigned j = 0; j < row_size_; ++j)
+			{
+				frac_mat[i][j] = vectors_[i][j];
+			}
+		}
+		return frac_mat;
+	}
 	
 	// Returns a ref to the corresponding row. Does basic bounds checking.
 	std::vector<T>& operator[](const std::size_t index)
@@ -122,6 +137,9 @@ public:
 	
 	friend Matrix& operator-=(Matrix& lhs, const Matrix& rhs)
 	{
+		static_assert(std::is_signed<T>() || std::is_class<T>(),
+			"subtraction is not defined for unsigned integral type");
+		
 		using namespace VectorOperations;
 		assert(lhs.size() == rhs.size());
 
@@ -140,6 +158,9 @@ public:
 
 	friend Matrix operator-(const Matrix& lhs, const Matrix& rhs)
 	{
+		static_assert(std::is_signed<T>() || std::is_class<T>(),
+			"subtraction is not defined for unsigned integral type");
+		
 		using namespace VectorOperations;
 		assert(lhs.size() == rhs.size());
 
@@ -185,76 +206,56 @@ public:
 	// Transposes the matrix
 	Matrix& transpose();
 
+	// Is used to determine the types of LU etc.
+	// Fraction for integrals and float, double etc. for floating points
+
+	using LU_T = 
+		std::conditional_t<std::is_floating_point_v<T>, T, Fraction>;
+
+	// TODO: Struct somewhere else?
+	
 	// Struct for holding result of the LU-factorization
 	struct LU
 	{
-		// Constructors takes the size of the matrix we want to produce LU for
-		// and initializes the L and U according to Doolittle's algorithm
-
-		// TODO: Refactor this pile of dung
-	
-		// LU constructor is always constructed from a given Matrix.
-		explicit LU(const Matrix<Fraction>& mat) :
+		// Constructor initializes L as square identity matrix and U as
+		// the matrix we want to calculate LU for
+		explicit LU(const Matrix<LU_T>& mat) :
 			L(mat.size().first, fill_type::identity),
 			U(mat)
 		{}
 
 		// L is square and lower triangular
-		Matrix<Fraction> L;
+		Matrix<LU_T> L;
 
 		// U is upper triangular
-		Matrix<Fraction> U;
+		Matrix<LU_T> U;
 	};
 
-	// TODO: LU for floating points
+	// Floating point and integral type lu() are not the same. SFINAE is used.
+	
 	/**
 	 * \brief Computes LU-factorization
 	 * \return LU-struct with members L and U.
 	 */
-	[[nodiscard]] LU lu() const
+	template <typename U = T>
+	[[nodiscard]]
+	std::enable_if_t<!std::is_floating_point_v<U>, LU>
+	lu() const
 	{
-		// static_assert(std::is_floating_point<T>(), "Not supported yet");
-
-		// Construct a Fraction vector
-		std::vector<std::vector<Fraction>> frac_data(
-			col_size_, std::vector<Fraction>(row_size_));
-
-		// Assign values of this
-		for (unsigned i=0; i < col_size_; ++i)
-		{
-			for (unsigned j=0; j < row_size_; ++j)
-			{
-				frac_data[i][j] = vectors_[i][j];
-			}
-		}
-		// converted matrix
-		Matrix<Fraction> frac_mat(frac_data);
-
-		LU lu(frac_mat);
+		LU lu(static_cast<Matrix<Fraction>>(*this));
 		return compute_lu(lu, 1);
 	}
 
-	// Relational and equality operators.	
-
-	friend bool operator<(const Matrix& lhs, const Matrix& rhs)
+	template <typename U = T>
+	[[nodiscard]]
+	std::enable_if_t<std::is_floating_point_v<U>, LU>
+	lu() const
 	{
-		return lhs.vectors_ < rhs.vectors_;
+		LU lu(*this);
+		return compute_lu(lu, 1);
 	}
 
-	friend bool operator<=(const Matrix& lhs, const Matrix& rhs)
-	{
-		return !(rhs < lhs);
-	}
-
-	friend bool operator>(const Matrix& lhs, const Matrix& rhs)
-	{
-		return rhs < lhs;
-	}
-
-	friend bool operator>=(const Matrix& lhs, const Matrix& rhs)
-	{
-		return !(lhs < rhs);
-	}
+	// Equality operators.	
 
 	friend bool operator==(const Matrix& lhs, const Matrix& rhs)
 	{
@@ -279,8 +280,8 @@ public:
 	[[nodiscard]] bool if_main_diag(const T predicate) const;
 
 	// Check for upper and lower triangular
-	[[nodiscard]] bool is_upper_triang() const;
-	[[nodiscard]] bool is_lower_triang() const;
+	[[nodiscard]] bool is_upper_triangular() const;
+	[[nodiscard]] bool is_lower_triangular() const;
 	
 	// Return size of Matrix as pair
 	[[nodiscard]] std::pair<std::size_t, std::size_t> size() const noexcept
@@ -321,11 +322,13 @@ private:
 	template<typename Dist>
 	void fill_random(const Dist& number_dist);
 
-	// Recursive function that computes the LU-fact using Doolittle's algorithm.
-	LU& compute_lu(LU& lu, int n) const;
+	// Recursive functions that compute the LU-fact using Doolittle algorithm.
+	// These templates are enabled by return type.
+
+	LU& compute_lu(LU& lu, const unsigned n) const;
 };
 
-// Alias template for LU struct
+// Alias for LU-struct
 template<typename T>
 using LU_t = typename Matrix<T>::LU;
 
