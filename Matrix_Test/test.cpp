@@ -12,7 +12,7 @@ namespace MatrixTests
 	inline const std::size_t M_SIZE = 5;
 
 	// initializer-list for test case (5x5 matrix I)
-	inline const std::initializer_list<std::vector<int>>
+	inline const std::initializer_list<std::initializer_list<int>>
 		I_LIST = {
 					{1, 0, 0, 0, 0},
 					{0, 1, 0, 0, 0},

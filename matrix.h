@@ -62,7 +62,7 @@ public:
 	// allowed. Copies do not matter as the elements are trivially copyable.
 
 	// Size and elements are derived from the initializer list. 
-	 Matrix(std::initializer_list<std::vector<T>> init_list);
+	Matrix(std::initializer_list<std::initializer_list<T>> init_list);
 
 	// Size is derived from the vector
 	Matrix(const std::vector<std::vector<T>>& vectors);

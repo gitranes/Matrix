@@ -45,8 +45,8 @@ Matrix<T>::Matrix(const std::size_t n, const std::size_t m, fill_type fill_type)
 }
 
 template <typename T>
-Matrix<T>::Matrix(std::initializer_list<std::vector<T>> init_list) :
-	vectors_(init_list),
+Matrix<T>::Matrix(std::initializer_list<std::initializer_list<T>> init_list) :
+	vectors_(init_list.begin(), init_list.end()),
 	col_size_(init_list.size()),
 	row_size_(init_list.begin()->size())
 {
